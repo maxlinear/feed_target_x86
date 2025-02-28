@@ -172,14 +172,14 @@ define Build/fitimage
   DTB_BASE_FILE=$(basename $(notdir $(2))); \
   sed -e 's@KERNEL@$(KDIR)/vmlinux.gz@g' \
 	-e 's@DTB@$(2)@g' kernel-dtb-fit.its > $(KDIR)/tmp/$$DTB_BASE_FILE.its; \
-  mkimage -f $(KDIR)/tmp/$$DTB_BASE_FILE.its $(KDIR)/tmp/$$DTB_BASE_FILE.fit; \
+  PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$$DTB_BASE_FILE.its $(KDIR)/tmp/$$DTB_BASE_FILE.fit; \
   cp -vf $(KDIR)/tmp/$$DTB_BASE_FILE.fit $(BIN_DIR)/fitimages/$$DTB_BASE_FILE.fit
 endef
 # generates rootfs in fit format.
 define Build/fit-rootfs
   mkdir -p $(BIN_DIR)/fitimages
   sed -e 's@ROOTFS@$@@g' rootfs-fit.its > $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-rootfs.its
-  mkimage -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-rootfs.its $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-rootfs.fit
+  PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-rootfs.its $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-rootfs.fit
   cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-rootfs.fit $(BIN_DIR)/fitimages/$(DEVICE_IMG_PREFIX)-rootfs.fit
 endef
 else
