@@ -17,6 +17,32 @@ define Build/dtb
 	$(call Image/BuildDTB,$(DEVICE_DTS_DIR)/$(1).dts,$@.dtb,-I$(LINUX_DIR)/include)
 	cat $@.dtb >> $@
 endef
+
+# generates dtb-ovarlay file.
+define Build/dtbo
+	$(call Image/BuildDTBO,$(DEVICE_DTS_DIR)/overlay_pon.dts,$@.dtbo,-I$(LINUX_DIR)/include)
+	cat $@.dtbo >> $@
+endef
+
+# $(1) source dts file
+# $(2) target dtb file
+# $(3) extra CPP flags
+# $(4) extra DTC flags
+define Image/BuildDTB/sub
+	$(TARGET_CROSS)cpp -nostdinc -x assembler-with-cpp \
+		$(DTS_CPPFLAGS) \
+		-I$(DTS_DIR) \
+		-I$(DTS_DIR)/include \
+		-I$(LINUX_DIR)/include/ \
+		-undef -D__DTS__ $(3) \
+		-o $(2).tmp $(1)
+	$(LINUX_DIR)/scripts/dtc/dtc -O dtb \
+		-i$(dir $(1)) $(4) \
+	-@ \
+		-o $(2) $(2).tmp
+	$(RM) $(2).tmp
+endef
+
 ifeq ($(CONFIG_INTEL_X86_KERNEL_METADATA),y)
 define Build/kernel-metadata
 	./kernel_metadata.sh $(LINUX_KERNEL)
@@ -190,6 +216,16 @@ define Build/fit-rootfs
 endef
 endif
 
+# generates dtb file with basedtb (eth dtb) and overlay PON dtbo.
+define Build/overlay-image
+  mkdir -p $(BIN_DIR)/overlay-images
+  BASE_DTB_FILE=$(basename $(notdir $(2))); \
+  sed -e 's@DTBO_FILE@$(1)@g' -e 's@DTB_FILE@$(2)@g' overlay_pon.its > $(KDIR)/tmp/$$BASE_DTB_FILE-overlay_pon.its; \
+  PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$$BASE_DTB_FILE-overlay_pon.its $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.itb; \
+  mv -v $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.itb $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.dtb; \
+  cp -vf $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.dtb $(BIN_DIR)/overlay-images/$$BASE_DTB_FILE-ov_pon.dtb
+endef
+
 define Build/generate-ext4fs
 	[ ! -f "$(BIN_DIR)/ext4.fs" ] && dd if=/dev/zero of="$(BIN_DIR)/ext4.fs" bs=1M count=112 && mkfs.ext4 -v -b 4096 -O ^metadata_csum,^64bit "$(BIN_DIR)/ext4.fs" || echo "" > /dev/null
 endef
@@ -228,18 +264,29 @@ define Device/Build/image-non-rootfs
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs
 	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)
+	[  "$(suffix $(1))" = ".dtbo" ] && mv -v $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)
 
 endef
 endif
 
 define Device/Build/fullimage
   $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
+  $$(_TARGET): $(if $(findstring pon,$(basename $(1))),,$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage)
   $(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage,$(1)))
+  $(if $(findstring pon,$(basename $(1))),,$(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage,$(basename $(1))_ov.img)))
 
   $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1))):
 	@rm -rf $$@
 	[ -f $$(word 1,$$^) ]
 	$$(call concat_cmd,$(IMAGE/$(word 4,$(IMAGE/$(1)))))
+
+  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))-ov_pon.dtb : $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-ov_pon.dtbo-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))
+	$(if $(findstring pon,$(basename $(1))),,$$(call Build/overlay-image,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-ov_pon.dtbo,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))))
+
+  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))-ov_pon.dtb
+	@rm -rf $$@
+	[ -f $$(word 1,$$^) ]
+	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE),$(if $(findstring pon,$(basename $(1))),,$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))-ov_pon.dtb)))
 
   $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))
 	@rm -rf $$@
@@ -248,6 +295,11 @@ define Device/Build/fullimage
 	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_FIT),$$(call Build/fitimage,$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))))
 
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
+
+  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage
+
+  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage $(BIN_DIR)/overlay-images/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)
@@ -629,11 +681,13 @@ TARGET_DEVICES += PRPL_OSP_TB341
 define Device/PRPL_OSP_TB341_v2
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM Model for prplOS osp tb341 v2
+  IMAGE/ov_pon.dtbo := dtbo overlay_pon
   IMAGE/osp_tb341_v2_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
   IMAGE/osp_tb341_v2_wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
   IMAGE/osp_tb341_v2_wav700_eth_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_eth.dtb
   IMAGE/osp_tb341_v2_wav700_pon_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_pon.dtb
   IMAGES += kernel.bin \
+		ov_pon.dtbo \
 		osp_tb341_v2_wav700_eth.dtb \
 		osp_tb341_v2_wav700_pon.dtb
   FULLIMAGES := osp_tb341_v2_wav700_eth_fullimage.img \
@@ -648,6 +702,7 @@ TARGET_DEVICES += PRPL_OSP_TB341_v2
 define Device/PRPL_MB_URX
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM CBSP B-Step Model for prplos
+  IMAGE/ov_pon.dtbo := dtbo overlay_pon
   IMAGE/851.dtb := dtb octopus_851
   IMAGE/851_pon.dtb := dtb octopus_851_pon
   IMAGE/641.dtb := dtb octopus_641
@@ -677,7 +732,8 @@ define Device/PRPL_MB_URX
   IMAGE/851_wav700_pon_fullimage.img := fullimage 16 squashfs 851_wav700_pon.dtb
   IMAGE/851_wav700_pon_fullimage_pm.img := fullimage 16 squashfs 851_wav700_pon_pm.dtb
   IMAGES += kernel.bin \
-        851.dtb 851_pon.dtb 641.dtb 641_pon.dtb octopus_641_aic_gsw140.dtb octopus_641_aic_10g_eth.dtb \
+		ov_pon.dtbo \
+		851.dtb 851_pon.dtb 641.dtb 641_pon.dtb octopus_641_aic_gsw140.dtb octopus_641_aic_10g_eth.dtb \
 		851_wav700_eth_pm.dtb \
 		851_wav700_pon_pm.dtb \
 		641_wav700_eth.dtb \
