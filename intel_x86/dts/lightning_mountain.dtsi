@@ -33,6 +33,12 @@
 			size = <0x3f000000>;
 			linux,cma-default;
 		};
+
+		ramoops: ramoops@0x100000 {
+			compatible = "ramoops";
+			reg = <0x100000 0x10000>;
+			record-size = <0x10000>;
+		};
 	};
 
 	aliases {

@@ -699,6 +699,25 @@ define Device/PRPL_OSP_TB341_v2
 endef
 TARGET_DEVICES += PRPL_OSP_TB341_v2
 
+define Device/PRPL_OSPv2_WGRTD159BE_B
+  $(Device/LGM_GENERIC)
+  DEVICE_TITLE := LGM Model for prplOS osp tb341 v2
+  IMAGE/wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
+  IMAGE/wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
+  IMAGE/wav700_eth_fullimage.img := fullimage 16 squashfs wav700_eth.dtb
+  IMAGE/wav700_pon_fullimage.img := fullimage 16 squashfs wav700_pon.dtb
+  IMAGES += kernel.bin \
+		wav700_eth.dtb \
+		wav700_pon.dtb
+  FULLIMAGES := wav700_eth_fullimage.img \
+		wav700_pon_fullimage.img
+  ROOTFS := fs.rootfs
+  ROOTFS_PREPARE := add-servicelayer-schema
+  DEVICE_PACKAGES := $(PM_PACKAGES)\
+                     $(UGW_DIAG_PACKAGES)
+endef
+TARGET_DEVICES += PRPL_OSPv2_WGRTD159BE_B
+
 define Device/PRPL_MB_URX
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM CBSP B-Step Model for prplos
