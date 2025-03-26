@@ -11,8 +11,8 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=ppv4-firmware-lgm
 PKG_BASE_NAME:=ppv4-fw
 PKG_SOURCE_PROTO:=git
-CONFIG_UGW_PKG_SOURCE_URL:=ssh://git@git.maxlinear.com
-PKG_PROJECT:=urx-oss/pp
+CONFIG_UGW_PKG_SOURCE_URL:=ssh://git@github.com
+PKG_PROJECT:=maxlinear
 PKG_SOURCE_NAME:=ppv4_fw_bin
 PKG_VERSION:=1.5.47
 PKG_RELEASE:=1
