@@ -47,11 +47,15 @@
 		groups = "usb_c_pwr_en2";
 	};
 
-	i2s_clk1:i2s_clk1 {
-		intel,pins = <3>;
-		function = "i2c_clk1";
-		pinmux = <2>;
-		groups = "i2c_clk1";
+	pinctrl_i2s1:pinctrl_i2s1 {
+		intel,pins = <32>, /* I2S_WA1 */
+			<33>, /* I2S_TX1 */
+			<37>, /* I2S_RX1 */
+			<38>; /* I2S_CLK1 */
+		function = "i2s1";
+		pinmux = <3>;
+		groups = "i2s1";
+		topmux = <0xE4 0x100 0x100>;
 	};
 
 	pinctrl_ledc0:pinctrl_ledc0 {
@@ -281,7 +285,7 @@
 		groups = "Fan_ctrl";
 	};
 
-	i2s0:i2s0 {
+	pinctrl_i2s0:pinctrl_i2s0 {
 		intel,pins =  <44>, /* I2S_CLK0 */
 			<45>, /* I2SWA0 */
 			<46>, /* I2S_RX0 */
@@ -341,7 +345,7 @@
 			<10>; /* UART_TX2 */
 		function = "UART2";
 		pinmux = <3>;
-		groups = "UART2";
+		groups = "UART2_2";
 		topmux = <0xE4 0x200 0x200>,
 			 <0xE0 0x20 0>;
 	};
@@ -389,6 +393,13 @@
 		function = "SDIO_CD_GPIO";
 		pinmux = <0>;
 		groups = "SDIO_CD_GPIO";
+	};
+
+	pinctrl_mdint_gpio: mdint_gpio {
+		intel,pins = <77>;
+		function = "MDINT_GPIO";
+		pinmux = <0>;
+		groups = "MDINT_GPIO";
 	};
 
 	pinctrl_sdio_wp: sdio_wp {

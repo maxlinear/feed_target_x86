@@ -26,14 +26,6 @@
 			reg = <0x25e00000 0x40000>;
 		};
 
-		linux,cma {
-			compatible = "shared-dma-pool";
-			reusable;
-			alignment = <0x200000>;
-			size = <0x3f000000>;
-			linux,cma-default;
-		};
-
 		ramoops: ramoops@0x100000 {
 			compatible = "ramoops";
 			reg = <0x100000 0x10000>;
@@ -322,6 +314,7 @@
 			       0xe0100000 0x26000>; /* EPU_GEN */
 			reg-names = "epu_aon", "epu_gen";
 			mxl,top-syscon = <&sysconf>;
+			mxl,pon-shell = <&wan_xpcs_phy>;
 			clocks = <&cgu0 LGM_CLK_OSC>;
 			interrupt-parent = <&ioapic1>;
 			interrupts = <99 1>,
@@ -504,14 +497,12 @@
 			};
 
 			pd_pcie10: pd_pcie10@LGM_EPU_PD_PCIE10 {
-		
 				reg = <LGM_EPU_PD_PCIE10>;
 				#power-domain-cells = <0>;
 				status = "disabled";
 			};
 
 			pd_pcie11: pd_pcie11@LGM_EPU_PD_PCIE11 {
-		
 				reg = <LGM_EPU_PD_PCIE11>;
 				#power-domain-cells = <0>;
 				status = "disabled";
@@ -577,6 +568,13 @@
 				reg = <LGM_EPU_PD_VOICE>;
 				#power-domain-cells = <0>;
 			};
+/*
+			pd_pon: pd_pon@LGM_EPU_PD_PON {
+				reg = <LGM_EPU_PD_PON>;
+				#power-domain-cells = <0>;
+			};
+*/
+
 		};
 
 		pinctrl: pinctrl@e2800000 {
@@ -668,9 +666,8 @@
 			ssoled:ssoled {
 				status = "disabled";
 				compatible = "mxl,sso-led";
-				mxl,fpid-clkrate= <8000>;
-				mxl,gptc-clkrate = <200000000>;
-				mxl,sso-def-updatesrc = <1>;
+				mxl,gptc-clkrate = <10000000>; /* 10Mhz */
+				mxl,sso-def-updatesrc = <3>; /* GTPC - 1, FPID - 2, GPTC-HS - 3 */
 			};
 		};
 
@@ -775,14 +772,16 @@
 			interrupts-extended = <&ioapic1 188 1>, <&ioapic1 189 1>,
 				<&soc_msi 63>, <&soc_msi 62>;
 			interrupt-names = "tc1a", "tc1b", "tc2a", "tc3a";
+			/* type, timer id, cpuid, 16/32 bit timer, timerA/B if 16bit timer */
 			mxl,clk = <&clocksource 2 0 0 32 0>, /* Heartbeat timer 1 */
-				<&clocksource 3 1 0 32 0>, /* SSO timer 2 */
-				<&clocksource 0 2 1 32 0>; /* Prewarn timer 3 */
-			prewarn-num = <1>;
+				  <&clocksource 3 1 0 32 0>, /* SSO timer 2 */
+				  <&clocksource 0 2 1 32 0>; /* Prewarn timer 3 */
+			prewarn-num = <0>;
 			prewarn-timer = <2 1 3>;
 			mxl,wdt-rst-base = <&sysconf>;
 			clocks = <&cgu0 LGM_CLK_NOC4>, <&cgu0 LGM_GCLK_GPTC0>;
 			clock-names = "freq", "gptc";
+			mxl,sso = <&ssoled>;
 		};
 
 		gptc1: gptu@e2500000 {
@@ -1861,13 +1860,13 @@
 			#size-cells = <1>;
 			ranges = <0 0xecd00000 0x80000>;
 
-	        	cqm_sram: cqm_sram {
-				reg = <0x0 0xe900>;
+			cqm_sram: cqm_sram {
+				reg = <0x0 0x28000>;
 				pool;
 			};
 
 			toe_sram: toe_sram {
-				reg = <0xe900 0x71700>;
+				reg = <0x28000 0x58000>;
 				pool;
 			};
 		};
@@ -2380,278 +2379,6 @@
 				"DMA0TXC3", "DMA0TXC4", "DMA0TXC5", "DMA0TXC6", "DMA0TXC7",
 				"DMA0TXC8", "DMA0TXC9", "DMA0TXC10", "DMA0TXC11", "DMA0TXC12",
 				"DMA0TXC13","DMA0TXC14","DMA0TXC15";
-			mxl,wav-port-resv = <&wav_port_resv>;
-			cqm,bm_pools {
-				#size-cells = <0>;
-				#address-cells = <1>;
-				pool@0 {
-					reg = <0>;
-					pool,buff_sz = <256>;
-					/* Default, PON Systems */
-					pool,pool-num_buffs = <128 128>;
-					pool,type = <SSB_NIOC_SHARED>;
-				};
-				pool@1 {
-					reg = <1>;
-					pool,buff_sz = <512>;
-					/* Default, PON Systems */
-					pool,pool-num_buffs = <9984 130752>;
-					pool,type = <CQM_NIOC_SHARED>;
-				};
-				pool@2 {
-					reg = <2>;
-					pool,buff_sz = <1024>;
-					pool,pool-num_buffs = <3008 34880>;
-					pool,type = <CQM_NIOC_SHARED>;
-				};
-				pool@3 {
-				reg = <3>;
-					pool,buff_sz = <2048>;
-					pool,pool-num_buffs = <215936 290368>;
-					pool,type = <CQM_NIOC_SHARED>;
-				};
-				pool@4 {
-					reg = <4>;
-					pool,buff_sz = <10240>;
-					pool,pool-num_buffs = <2432 6144>;
-					pool,type = <CQM_NIOC_SHARED>;
-				};
-				/* Voice Pool: type = CQM_NIOC_ISOLATED */
-				pool@5 {
-					reg = <5>;
-					pool,buff_sz = <2048>;
-					pool,pool-num_buffs = <1024>;
-					pool,type = <CQM_NIOC_ISOLATED>;
-				};
-				/* CPU Pools: type = CQM_CPU_ISOLATED */
-				pool@6 {
-					reg = <6>;
-					pool,buff_sz = <512>;
-					pool,pool-num_buffs = <128>;
-					pool,type = <CQM_CPU_ISOLATED>;
-				};
-				pool@7 {
-					reg = <7>;
-					pool,buff_sz = <1024>;
-					pool,pool-num_buffs = <18496>;
-					pool,type = <CQM_CPU_ISOLATED>;
-				};
-				pool@8 {
-					reg = <8>;
-					pool,buff_sz = <2048>;
-					pool,pool-num_buffs = <11328>;
-					pool,type = <CQM_CPU_ISOLATED>;
-				};
-				pool@9 {
-					reg = <9>;
-					pool,buff_sz = <10240>;
-					pool,pool-num_buffs = <512>;
-					pool,type = <CQM_CPU_ISOLATED>;
-				};
-			};
-			cqm,bm_policies{
-				#size-cells = <0>;
-				#address-cells = <1>;
-				bm_policy@0 {
-					reg=<0>;/* Policy Id */
-					policy,pool = <0 DP_RES_ID_SYS>,
-						      <1 DP_RES_ID_SYS>; /* Pool Id, Type */
-					/* <Min Guaranteed, Max Allowed> */
-					policy,alloc = <64 9548 64 130316>; /* If PON is enabled */
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@1 {
-					reg=<1>;
-					policy,pool = <1 DP_RES_ID_SYS>;
-					policy,alloc = <64 9420 64 130188>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@2 {
-					reg=<2>;
-					policy,pool = <2 DP_RES_ID_SYS>;
-					policy,alloc = <2840 2848 34664 34751>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@3 {
-					reg=<3>;
-					policy,pool = <3 DP_RES_ID_SYS>;
-					policy,alloc = <6296 7870 76839 91976>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@4 {
-					reg=<4>;
-					policy,pool = <4 DP_RES_ID_SYS>;
-					policy,alloc = <2331 2343 6044 6075>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				/* TOE TX policy */
-				bm_policy@5 {
-					reg=<5>;
-					policy,pool = <3 DP_RES_ID_SYS>;
-					policy,alloc = <2048 2560>;
-					policy,direction = <CQM_TX>;
-				};
-				/* Radio 1: WAV 2.4G Policies */
-				bm_policy@6 {
-					reg=<6>;
-					policy,pool = <3 DP_RES_ID_WAV614>;
-					policy,alloc = <5000 6250>;
-					policy,direction = <CQM_RX>;
-				};
-				bm_policy@7 {
-					reg=<7>;
-					policy,pool = <3 DP_RES_ID_WAV614>;
-					policy,alloc = <10000 12500>;
-					policy,direction = <CQM_TX>;
-				};
-				/* Radio 2: WAV 5/6G Policies */
-				bm_policy@8 {
-					reg=<8>;
-					policy,pool = <3 DP_RES_ID_WAV624>;
-					policy,alloc = <10000 12500>;
-					policy,direction = <CQM_RX>;
-				};
-				bm_policy@9 {
-					reg=<9>;
-					policy,pool = <3 DP_RES_ID_WAV624>;
-					policy,alloc = <20000 25000>;
-					policy,direction = <CQM_TX>;
-				};
-				/* Radio 3: WAV 5/6G Policies */
-				bm_policy@10 {
-					reg=<10>;
-					policy,pool = <3 DP_RES_ID_WAV624>;
-					policy,alloc = <10000 12500>;
-					policy,direction = <CQM_RX>;
-				};
-				bm_policy@11 {
-					reg=<11>;
-					policy,pool = <3 DP_RES_ID_WAV624>;
-					policy,alloc = <20000 25000>;
-					policy,direction = <CQM_TX>;
-				};
-				/* DSL Policies */
-				bm_policy@12 {
-					reg=<12>;
-					policy,pool = <3 DP_RES_ID_VRX>;
-					policy,alloc = <1000 1250 1000 1250>;
-					policy,direction = <CQM_RX>;
-				};
-				bm_policy@13 {
-					reg=<13>;
-					policy,pool = <1 DP_RES_ID_VRX>;
-					policy,alloc = <500 618 500 625>;
-					policy,direction = <CQM_TX>;
-				};
-				bm_policy@14 {
-					reg=<14>;
-					policy,pool = <2 DP_RES_ID_VRX>;
-					policy,alloc = <150 157 150 188>;
-					policy,direction = <CQM_TX>;
-				};
-				bm_policy@15 {
-					reg=<15>;
-					policy,pool = <3 DP_RES_ID_VRX>;
-					policy,alloc = <320 400 320 400>;
-					policy,direction = <CQM_TX>;
-				};
-				bm_policy@16 {
-					reg=<16>;
-					policy,pool = <4 DP_RES_ID_VRX>;
-					policy,alloc = <64 76 64 95>;
-					policy,direction = <CQM_TX>;
-				};
-				/* Voice Policy */
-				bm_policy@17 {
-					reg=<17>;
-					policy,pool = <5 DP_RES_ID_VOICE0>;
-					policy,alloc = <1024 1024>;
-					policy,direction = <CQM_RX>;
-				};
-				/* CPU Policies */
-				bm_policy@18 {
-					reg=<18>;
-					policy,pool = <6 DP_RES_ID_CPU> ;
-					policy,alloc = <128 128>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@19 {
-					reg=<19>;
-					policy,pool = <7 DP_RES_ID_CPU>;
-					policy,alloc = <18496 18496>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@20 {
-					reg=<20>;
-					policy,pool = <8 DP_RES_ID_CPU>;
-					policy,alloc = <11328 11328>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@21 {
-					reg=<21>;
-					policy,pool = <9 DP_RES_ID_CPU>;
-					policy,alloc = <512 512>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@22 {
-					reg=<22>;
-					policy,pool = <3 DP_RES_ID_WAV700>;
-					policy,alloc = <40000 50000>;
-					policy,direction = <CQM_RX>;
-				};
-				bm_policy@23 {
-					reg=<23>;
-					policy,pool = <3 DP_RES_ID_WAV700>;
-					policy,alloc = <80000 91257 80000 95136>;
-					policy,direction = <CQM_TX>;
-				};
-				bm_policy@24 {
-					reg=<24>;
-					policy,pool = <1 DP_RES_ID_DOCSIS>;
-					policy,alloc = <0 0 48623 50709>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@25 {
-					reg=<25>;
-					policy,pool = <2 DP_RES_ID_DOCSIS>;
-					policy,alloc = <0 0 14587 14721>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@26 {
-					reg=<26>;
-					policy,pool = <3 DP_RES_ID_DOCSIS>;
-					policy,alloc = <0 0 30000 30000>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@27 {
-					reg=<27>;
-					policy,pool = <4 DP_RES_ID_DOCSIS>;
-					policy,alloc = <0 0 1727 1788>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@28 {
-					reg=<28>;
-					policy,pool = <3 DP_RES_ID_DOCSIS_MMM>;
-					policy,alloc = <0 0 128 512>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@29 {
-					reg=<29>;
-					policy,pool = <3 DP_RES_ID_DOCSIS_VOICE>;
-					policy,alloc = <0 0 512 512>;
-					policy,direction = <CQM_TX_RX>;
-				};
-				bm_policy@30 {
-					reg=<30>;
-					policy,pool = <2 DP_RES_ID_DOCSIS_MPEG>;
-					policy,alloc = <0 0 512 512>;
-					policy,direction = <CQM_TX_RX>;
-				};
-			};
-		};
-
-		wav_port_resv: wav_port_resv {
-			mxl,wav-port-resv=<3 4>;
 		};
 
 		wan_xpcs: xpcs@4 {
@@ -2790,6 +2517,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <2>;
+				rxfifo_err_thresh = <0>;
 				macsec_ig = <&eip160_ig>;
 				macsec_eg = <&eip160_eg>;
 				xpcs = <&wan_xpcs>;
@@ -2866,6 +2594,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <3>;
+				rxfifo_err_thresh = <0>;
 				macsec_ig = <&eip160_ig>;
 				macsec_eg = <&eip160_eg>;
 				xpcs = <&hsiol_xpcs0>;
@@ -2887,6 +2616,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <4>;
+				rxfifo_err_thresh = <0>;
 				macsec_ig = <&eip160_ig>;
 				macsec_eg = <&eip160_eg>;
 				xpcs = <&hsior_xpcs0>;
@@ -2909,6 +2639,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <5>;
+				rxfifo_err_thresh = <0>;
 				/*board_type = "haps";*/
 			};
 
@@ -2928,6 +2659,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <6>;
+				rxfifo_err_thresh = <0>;
 				/*board_type = "haps";*/
 			};
 
@@ -2947,6 +2679,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <7>;
+				rxfifo_err_thresh = <0>;
 				/*board_type = "haps";*/
 			};
 
@@ -2966,6 +2699,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <8>;
+				rxfifo_err_thresh = <0>;
 				/*board_type = "haps";*/
 			};
 
@@ -2984,6 +2718,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <9>;
+				rxfifo_err_thresh = <0>;
 				/*xpcs = <&hsiol_xpcs1>;*/
 				/*board_type = "haps";*/
 			};
@@ -3003,6 +2738,7 @@
 				ts-ig-corr = <(-190)>;
 				ts-eg-corr = <11>;
 				mac_idx = <10>;
+				rxfifo_err_thresh = <0>;
 				/*xpcs = <&hsior_xpcs1>;*/
 				/*board_type = "haps";*/
 			};
@@ -3283,6 +3019,7 @@
 				fw-sec-data-stack-dccm = <1>;
 				fw-sec-data-stack-dccm-offset = <0>;
 				fw-sec-data-stack-dccm-max-sz = <0x2000>;
+				mxl,cert-mode = <0>;
 			};
 
 			egr_uc: eg_uc@400000 {
@@ -3294,12 +3031,12 @@
 					    "chk-base-addr",
 					    "chk-cnt-cache-base-addr",
 					    "rxdma-base-addr",
-					    "cls-base-addr";
+					    "cls-base-addr", "wred-cfg-base-addr","qos-misc-base-addr";
 				reg = <0x400000 0x400000>, <0xC0000 0x0>,
 				      <0x30000 0x0>, <0x8000 0x0>,
 				      <0x700000 0x0>, <0x1060000 0x0>,
 				      <0x1800000 0x0>, <0x1D00000 0x0>,
-				      <0x6000 0x0>, <0x1c00000 0x0>;
+				      <0x6000 0x0>, <0x1c00000 0x0>, <0x1020000 0x0>, <0x1051000 0x0>;
 				max-cpu = <4>;
 				profiles = <1 2 3 4>;
 			};
@@ -3420,19 +3157,17 @@
 
 		qspi0: qspi@ec000000 {
 			status = "disabled";
-			compatible = "cadence,qspi";
-			reg = <0xec000000 0x100>;
+			compatible = "intel,lgm-qspi";
+			reg = <0xec000000 0x100>,
+			      <0xf4000000 0x800000>;
 			interrupt-parent = <&ioapic1>;
 			interrupts = <36 1>;
 			#address-cells = <1>;
-			#size-cells = <1>;
-			num-chipselect = <2>;
-			fifo-depth = <128>;
-			ext-decoder = <0>;
-			bus-num = <0>;
-			lantiq,qspi-port = <0>;
-			lantiq,qspi-phyaddr = <0xf4000000>;
-			lantiq,qspi-phymask = <0xffffffff>;
+			#size-cells = <0>;
+			num-cs = <2>;
+			cdns,fifo-depth = <128>;
+			cdns,fifo-width = <4>;
+			cdns,trigger-address = <0xf4000000>;
 			clocks = <&cgu0 LGM_CLK_QSPI>, <&cgu0 LGM_GCLK_QSPI>;
 			clock-names = "freq", "qspi";
 			resets = <&rcu0 0x10 1>;
@@ -3444,28 +3179,18 @@
 			compatible = "mxl,lgm-gen-pool";
 
 			icc_pool: icc_pool {
-				size = <0x4000000>;
-				perm = <NOC_RW_PERM>;
 			};
 
 			rw_pool: rw_pool {
-				size = <0x2100000>;
-				perm = <NOC_RW_PERM>;
 			};
 
 			cpu_pool: cpu_pool {
-				size = <0x2D40000>;
-				perm = <NOC_RW_PERM>;
 			};
 
 			sys_pool: sys_pool {
-				size = <0x1C550000>;
-				perm = <NOC_RD_PERM>;
 			};
 
 			ro_pool: ro_pool {
-				size = <0x600000>;
-				perm = <NOC_RD_PERM>;
 			};
 		};
 
@@ -3588,9 +3313,32 @@
 			umt-period-us = <14>;
 			dma-coherent;
 		};
-	};
 
-	i2s1:i2s1 { /* i2S1 device node. Currently not supported */
+		i2s0: i2s@e2100000 {
+			status = "disabled";
+			compatible = "mxl,lgm-i2s";
+			reg = <0xe2100000 0x10000>;
+			interrupt-parent = <&ioapic1>;
+			interrupts = <42 1>;
+			clocks = <&cgu0 LGM_CLK_VIF>;
+			clock-names = "freq";
+			resets = <&rcu0 0x30 25>;
+			reset-names = "i2s";
+			power-domains = <&pd_i2s0>;
+		};
+
+		i2s1: i2s@e2700000 {
+			status = "disabled";
+			compatible = "mxl,lgm-i2s";
+			reg = <0xe2700000 0x10000>;
+			interrupt-parent = <&ioapic1>;
+			interrupts = <114 1>;
+			clocks = <&cgu0 LGM_CLK_VIF>;
+			clock-names = "freq";
+			resets = <&rcu0 0x30 26>;
+			reset-names = "i2s";
+			power-domains = <&pd_i2s1>;
+		};
 	};
 };
 

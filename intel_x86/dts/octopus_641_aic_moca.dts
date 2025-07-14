@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2020-2022 MaxLinear, Inc.
+ * Copyright (C) 2020-2025 MaxLinear, Inc.
  * Copyright (C) 2019-2020 Intel Corporation.
  */
 
@@ -10,6 +10,11 @@
 #include "octopus_emmc.dtsi"
 #include "octopus_641_led.dtsi"
 #include "voice.dtsi"
+
+#include "config_ddr_2gb.dtsi"
+#include "config_subsystem_gw.dtsi"
+#include "config_wave6x4.dtsi"
+#include "bm_main_eth.dtsi"
 
 &mac0_mdio {
 	rtl8261phy: ethernet-phy@6 {
@@ -30,7 +35,8 @@
 
 / {
 	aliases {
-		eth0_0 = &lan0;
+		eth0_6 = &lan0;
+		eth0_7 = &lan1;
 	};
 };
 
@@ -38,6 +44,7 @@
 	lan0: interface@6 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_6";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <4>;
 		mxl,dp-port-id = <4>;
@@ -59,7 +66,7 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
-
+		label = "eth0_7";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <10>;
 		mxl,dp-port-id = <10>;

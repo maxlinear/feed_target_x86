@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2023 MaxLinear, Inc.
+ * Copyright (C) 2023-2025 MaxLinear, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License, as published by the Free
@@ -17,7 +17,12 @@
  */
 
 /dts-v1/;
-#include "lgm_haps_datapath.dts"
+#include "lgm_haps_datapath_base.dtsi"
+
+#include "config_ddr_2gb.dtsi"
+#include "config_subsystem_gw.dtsi"
+#include "config_wave6x4.dtsi"
+#include "bm_main_eth.dtsi"
 
 &emmc {
 	status = "okay";

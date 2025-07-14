@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2020-2022 MaxLinear, Inc.
+ * Copyright (C) 2020-2025 MaxLinear, Inc.
  * Copyright (C) 2019-2020 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -207,6 +207,7 @@
 		eth0_3 = &lan3;
 		eth0_4 = &lan4;
 		eth0_5 = &lan5;
+		wan = &wan0;
 	};
 	usb0_vbus:regulator-vbus@0 {
 		compatible = "regulator-fixed";
@@ -293,6 +294,8 @@
 	lan1: interface@1 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_1";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <4>;
 		mxl,dp-port-id = <4>;
@@ -316,6 +319,8 @@
 	lan2: interface@2 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_2";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <5>;
 		mxl,dp-port-id = <5>;
@@ -335,6 +340,8 @@
 	lan3: interface@3 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_3";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <6>;
 		mxl,dp-port-id = <6>;
@@ -354,6 +361,8 @@
 	lan4: interface@4 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_4";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <7>;
 		mxl,dp-port-id = <7>;
@@ -373,6 +382,8 @@
 	lan5: interface@5 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_5";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <8>;
 		mxl,dp-port-id = <8>;
@@ -392,6 +403,8 @@
 	wan0: interface@8 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth1";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,wan = <1>;
 		mxl,dp-dev-port = <2>;
@@ -538,26 +551,54 @@
 		tchsh-ns = <20>;
 		tslch-ns = <20>;
 
-        partition@0 {
-            reg = <0x0 0x80000>;
-            label = "uboot";
-            read-only;
-        };
+		partition@0 {
+			reg = <0x0 0x80000>;
+			label = "uboot";
+			read-only;
+		};
 
-        partition@c0000 {
-            reg = <0xc0000 0x500000>;
-            label = "uboot_env";
-        };
+		partition@c0000 {
+			reg = <0xc0000 0x500000>;
+			label = "uboot_env";
+		};
 
-        partition@800000 {
-            reg = <0x800000 0x800000>;
-            label = "image0";
-        };
+		partition@800000 {
+			reg = <0x800000 0x800000>;
+			label = "image0";
+		};
 
-        partition@1000000 {
-            reg = <0x1000000 0x20000>;
-            label = "image1";
-        };
+		partition@1000000 {
+			reg = <0x1000000 0x20000>;
+			label = "image1";
+		};
+	};
+};
+
+&i2s1 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2s1>;
+	#sound-dai-cells = <0>;
+};
+
+/ {
+	codec: max98357a {
+		status = "disabled";
+		compatible = "maxim,max98357a";
+		#sound-dai-cells = <0>;
+	};
+
+	soundcard: sound {
+		status = "disabled";
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "mxl audio card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,cpu {
+			sound-dai = <&i2s1>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&codec>;
+		};
 	};
 };
 

@@ -4,7 +4,7 @@
  */
 
 / {
-	wan {
+	wan: wan {
 		ifname = "eth1";
 	};
 };
@@ -26,10 +26,6 @@
 	status = "disabled";
 };
 
-&lpid_config {
-	mxl,wan-mode = <LPID_WAN_ETH>;
-};
-
 &wan0 {
 	status = "okay";
 
@@ -46,6 +42,7 @@
 	mac = <&gsw_mac0>;
 	phy-mode = "10gbase-kr";
 	sfp = <&sfp_wan0>;
+	altname = "sfp0";
 
 	wan0_eth: ethernet@8 {
 		compatible = "mxl,pdi-port";

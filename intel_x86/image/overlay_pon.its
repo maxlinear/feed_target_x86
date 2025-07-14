@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2024-2025 MaxLinear, Inc.
+ */
+
 /*
  * The image source file creates FIT image with MXL URX Base Device Tree Blob (DTB) and Device Tree Blob Overlay (DTBO).
  */

@@ -32,10 +32,6 @@
 	status = "okay";
 };
 
-&lpid_config {
-	mxl,wan-mode = <LPID_WAN_ETH>;
-};
-
 &eth {
 	wan0 {
 		status = "okay";

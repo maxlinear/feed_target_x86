@@ -30,6 +30,13 @@ fw_env_config() {
 			dev_name=$(grep "DEVNAME" "$f_uboot_conf" | cut -d= -f2)
 			env_size=0
 			cur_env_size=0
+			
+			if [ ! -e "/dev/$dev_name" ]; then
+				major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$dev_name/uevent | grep MAJOR | cut -d '=' -f2)
+				minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$dev_name/uevent | grep MINOR | cut -d '=' -f2)
+				mknod /dev/$dev_name b $major_value $minor_value > /dev/null 2>&1
+			fi
+			
 			[ -b /dev/$dev_name ] && {
 				env_size=$(printf "0x%X" `expr $(cat "$dir/$dev_name/size" | cut -d= -f1) \* 512`)
 			}

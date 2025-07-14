@@ -14,3 +14,7 @@
 &ebu_nand {
 	status = "disabled";
 };
+
+&pinctrl_ebu_nand_ext {
+	status = "disabled";
+};

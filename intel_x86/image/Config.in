@@ -67,6 +67,26 @@ config INTEL_X86_IMAGE_FORMAT_MKIMAGE
 	help
 		Builds a image in mkimage format.
 
+config INTEL_X86_SINGLE_IMAGE
+	bool "Build a single image for Eth and PON WAN"
+	help
+		Builds a single image for Eth and PON WAN.
+
+config OSP_TB341_v1_PON_OVERLAY
+	bool "OSP-v1 PON DTS changes for single image"
+	help
+		OSP-v1 PON DTS changes for single image.
+
+config WAVE_700
+	bool "Enables the BM Policy for WAVE_700"
+	help
+		Enables the BM Policy for WAVE_700.
+
+config WAVE_6X4
+	bool "Enables the BM Policy for WAVE_6X4"
+	help
+		Enables the BM Policy for WAVE_6X4.
+
 if INTEL_X86_SECBOOT
 	config INTEL_X86_EXTERNAL_IMAGE_SIGNING
 		bool "enable external image signing"
@@ -152,25 +172,38 @@ if INTEL_X86_SECBOOT
 
 	config INTEL_X86_KERNEL_ROLLBACKID
 		hex 'kernel roll back id'
-		default 0x4
+		default 0x1
 		help
 			kernel roll back id
 
 	config INTEL_X86_ROOTFS_ROLLBACKID
 		hex 'rootfs roll back id'
-		default 0x4
+		default 0x1
 		help
 			rootfs roll back id
 
 	config INTEL_X86_DTB_ROLLBACKID
 		hex 'dtb roll back id'
-		default 0x4
+		default 0x1
 		help
 			device tree roll back id
 
 	config INTEL_X86_TEP_ROLLBACKID
 		hex 'tep roll back id'
-		default 0x4
+		default 0x1
 		help
 			tep roll back id
+
+	config INTEL_X86_KERNEL_FLEXI_ROLLBACKID
+		hex 'kernel flexi roll back id'
+		default 0x1
+		help
+			kernel flexi roll back id
+
+	config INTEL_X86_ROOTFS_FLEXI_ROLLBACKID
+		hex 'rootfs flexi roll back id'
+		default 0x1
+		help
+			rootfs flexi roll back id
+
 endif

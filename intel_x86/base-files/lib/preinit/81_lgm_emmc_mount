@@ -28,6 +28,27 @@ mount_root_lgm() {
 	done
 	
 	overlay_partname="$([ -n "$rootfs_data_partname" ] && echo "$rootfs_data_partname" || [ -n "$overlay_container_a_partname" ] && echo "$overlay_container_a_partname")"
+	
+	if [ ! -e "/dev/$overlay_partname" ]; then
+		major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$overlay_partname/uevent | grep MAJOR | cut -d '=' -f2)
+		minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$overlay_partname/uevent | grep MINOR | cut -d '=' -f2)
+		mknod /dev/$overlay_partname b $major_value $minor_value > /dev/null 2>&1
+	fi
+	if [ ! -e "/dev/$securestore_a_partname" ]; then
+		major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$securestore_a_partname/uevent | grep MAJOR | cut -d '=' -f2)
+		minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$securestore_a_partname/uevent | grep MINOR | cut -d '=' -f2)
+		mknod /dev/$securestore_a_partname b $major_value $minor_value > /dev/null 2>&1
+	fi
+	if [ ! -e "/dev/$securestore_b_partname" ]; then
+		major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$securestore_b_partname/uevent | grep MAJOR | cut -d '=' -f2)
+		minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$securestore_b_partname/uevent | grep MINOR | cut -d '=' -f2)
+		mknod /dev/$securestore_b_partname b $major_value $minor_value > /dev/null 2>&1
+	fi
+	if [ ! -e "/dev/$lcm_data_partname" ]; then
+		major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$lcm_data_partname/uevent | grep MAJOR | cut -d '=' -f2)
+ 		minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$lcm_data_partname/uevent | grep MINOR | cut -d '=' -f2)
+		mknod /dev/$lcm_data_partname b $major_value $minor_value > /dev/null 2>&1
+	fi
 
 	[ ! -z "$overlay_partname" ] && [ -e "/dev/$overlay_partname" ] && {
 		e2fsck -p /dev/$overlay_partname > /dev/null

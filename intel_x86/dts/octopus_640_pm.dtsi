@@ -15,31 +15,31 @@
 			compatible = "ltc2945";
 			reg = <0x68>;
 			ltc2945,resistor = <10>; /* the unit is mohm */
-			rail-name = "PWR_5V_PMIC";
+			rail-name = "PWR_5V_PMIC\n";
 		};
 		hwmon@6c {
 			compatible = "ltc2945";
 			reg = <0x6c>;
 			ltc2945,resistor = <10>; /* the unit is mohm */
-			rail-name = "PWR_1V2_DDR";
+			rail-name = "PWR_1V2_DDR\n";
 		};
 		hwmon@6d {
 			compatible = "ltc2945";
 			reg = <0x6d>;
 			ltc2945,resistor = <10>; /* the unit is mohm */
-			rail-name = "PWR_3V3_URX";
+			rail-name = "PWR_3V3_URX\n";
 		};
 		hwmon@6e {
 			compatible = "ltc2945";
 			reg = <0x6e>;
 			ltc2945,resistor = <10>; /* the unit is mohm */
-			rail-name = "PWR_1V8_URX";
+			rail-name = "PWR_1V8_URX\n";
 		};
 		hwmon@6f {
 			compatible = "ltc2945";
 			reg = <0x6f>;
 			ltc2945,resistor = <10>; /* the unit is mohm */
-			rail-name = "PWR_12V_IN ";
+			rail-name = "PWR_12V_IN\n";
 		};
 	};
 };

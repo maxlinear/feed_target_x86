@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2018 Intel Corporation.
+ * Copyright (C) 2020-2025 MaxLinear, Inc.
+ * Copyright (c) 2018-2020 Intel Corporation.
  */
 
 /dts-v1/;
@@ -8,6 +9,11 @@
 #include <dt-bindings/clock/intel,lgm-clk.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "lightning_mountain_c.dtsi"
+
+#include "config_ddr_2gb.dtsi"
+#include "config_subsystem_gw.dtsi"
+#include "config_wave6x4.dtsi"
+#include "bm_main_eth.dtsi"
 
 / {
 	model = "intel,lightning mountain";

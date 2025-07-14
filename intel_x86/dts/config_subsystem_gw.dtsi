@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2024-2025 MaxLinear, Inc.
+ */
+
+#ifndef _CONFIG_SUBSYSTEM_
+#define _CONFIG_SUBSYSTEM_
+
+#define CONFIG_SUBSYSTEM_GW
+
+#else
+#error "subsystem configuration is already included"
+#endif /* _CONFIG_SYBSYSTEM_ */
+

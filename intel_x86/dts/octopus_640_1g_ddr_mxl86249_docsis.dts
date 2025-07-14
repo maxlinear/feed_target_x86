@@ -7,9 +7,12 @@
 #include "octopus_640_base.dtsi"
 #include "octopus_640_docsis.dtsi"
 #include "octopus_640_p34x_lan.dtsi"
-#include "lgmc_emta_docsis_1GB.dtsi"
 #include "octopus_emmc.dtsi"
 #include "octopus_640_led.dtsi"
 #include "octopus_640_gpy215.dtsi"
 #include "octopus_640_gsw120.dtsi"
 #include "voice.dtsi"
+
+#include "config_ddr_1gb.dtsi"
+#include "config_subsystem_modem.dtsi"
+#include "bm_main_docsis.dtsi"

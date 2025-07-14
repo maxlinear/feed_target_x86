@@ -32,7 +32,15 @@
 };
 
 &lpid_config {
-	mxl,wan-mode = <LPID_WAN_PON>;
+	mxl,lpid-epg-map = <2 75 0 0>,
+				<3 35 2 8>,
+				<5 51 1 8>,
+				<4 36 2 9>,
+				<6 37 2 10>,
+				<7 52 1 9>,
+				<8 53 1 10>,
+				<9 38 2 11>,
+				<10 54 1 11>;
 };
 
 &ponmbox {
@@ -55,27 +63,13 @@
 	status = "okay";
 };
 
-&cqm_lgm {
-	mxl,sram-size = <0x2eb00>;
-};
-
-&toe {
-	mxl,sram-size = <0x51500>;
-};
-
-&ppv4 {
-	qos@1000000 {
-		wred-total-resources = <425984>;
-	};
-};
-
 &gsw_mac0 {
 	/* allow small packets for extended OMCI messaging */
 	err-pkt-fwd-undersized;
 	// err-pkt-fwd-errored;
 };
 
-#define CQM_SSB_SIZE (0xe900)
+#define CQM_SSB_SIZE (0x2eb00)
 #define TOE_SSB_SIZE (0x80000 - CQM_SSB_SIZE)
 &reserved_mem {
 	toe_ssb_memaxi: memaxi {

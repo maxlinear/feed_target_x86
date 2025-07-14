@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2024 MaxLinear, Inc.
+ */
+
+&i2c_mux {
+	status = "okay";
+
+	chan@1 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <1>;
+
+		hwmon@68 {
+			compatible = "ltc2945";
+			reg = <0x68>;
+			ltc2945,resistor = <100>; /* the unit is mohm */
+			rail-name = "ARGUS_SOC_0V8\n";
+		};
+		hwmon@69 {
+			compatible = "ltc2945";
+			reg = <0x69>;
+			ltc2945,resistor = <200>; /* the unit is mohm */
+			rail-name = "ARGUS_SOC_3V3\n";
+		};
+		hwmon@6d {
+			compatible = "ltc2945";
+			reg = <0x6d>;
+			ltc2945,resistor = <100>; /* the unit is mohm */
+			rail-name = "ARGUS_SOC_1V8\n";
+		};
+		hwmon@6e {
+			compatible = "ltc2945";
+			reg = <0x6e>;
+			ltc2945,resistor = <3>; /* the unit is mohm */
+			rail-name = "ARGUS_SOC_0V8_CORE\n";
+		};
+		hwmon@6f {
+			compatible = "ltc2945";
+			reg = <0x6f>;
+			ltc2945,resistor = <100>; /* the unit is mohm */
+			rail-name = "ARGUS_SOC_1V2\n";
+		};
+	};
+};

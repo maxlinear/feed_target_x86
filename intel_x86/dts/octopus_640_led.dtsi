@@ -12,7 +12,12 @@
 &ssoled {
 	status = "okay";
 	mxl,sso-def-brightness = <0>;
-	mxl,sso-def-updatesrc = <1>; /* 0 - manual, 1 - gptc 2 - fpid */
+	mxl,sso-def-updatesrc  = <3>; /* 0 - manual, 1 - GPTC, 2 - fpid, 3 - GPTC HS */
+	/**
+	 * blink rate is 2/4/8/10 for FPID mode
+	 * blink rate is gptc_clk / 200 / (4 | 5 | 10 | 20)
+	 * blink rate for GPTC HS is 2,4,8,10,gptc_clk / 200 / (1 | 4 | 5 | 10 | 20)
+	 */
 	mxl,sso-def-blinkrate = <2>;
 
 	led0: led0 { /* COH1 */

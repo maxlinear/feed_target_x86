@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2021-2025 MaxLinear, Inc.
+ */
+ 
+/dts-v1/;
+#include "osp_wgrtd159be_b_v2_base.dtsi"
+#include "octopus_641_sfp_eth_wan.dtsi"
+#include "osp_tb341_v2_10g_phy_lan.dtsi"
+#include "octopus_emmc.dtsi"
+#include "osp_tb341_v2_led.dtsi"
+#include "voice.dtsi"
+
+#include "config_ddr_2gb.dtsi"
+#include "config_subsystem_gw.dtsi"
+#include "config_wave700.dtsi"
+#include "bm_main_eth.dtsi"

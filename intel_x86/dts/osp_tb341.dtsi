@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2020-2022 MaxLinear, Inc.
+ * Copyright (C) 2020-2025 MaxLinear, Inc.
  * Copyright (C) 2019-2020 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -249,6 +249,12 @@
 		eth0_3 = &lan3;
 		eth0_4 = &lan4;
 		eth0_5 = &lan5;
+		eth1 = &lan0;
+		eth2 = &lan2;
+		eth3 = &lan3;
+		eth4 = &lan4;
+		eth5 = &lan5;
+		wan = &wan0;
 	};
 	usb0_vbus:regulator-vbus@0 {
 		compatible = "regulator-fixed";
@@ -317,6 +323,8 @@
     lan0: interface@0 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_1";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		reg = <0>;
 		mxl,dp-dev-port = <3>;
@@ -336,6 +344,8 @@
 	lan1: interface@1 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_0";
+		status = "disabled";
 		compatible = "mxl,pdi";
 		reg = <1>;
 		mxl,dp-dev-port = <4>;
@@ -355,11 +365,14 @@
 	lan2: interface@2 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_2";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <5>;
 		mxl,dp-port-id = <5>;
 		mxl,xgmac-id = <5>;
 		mac = <&gsw_mac3>;
+		p34x-xpcs-node = <&lan_xpcs>;
 		managed = "in-band-status";
 		phy = <&gphy0>;
 		phy-mode = "sgmii";
@@ -374,11 +387,14 @@
 	lan3: interface@3 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_3";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <6>;
 		mxl,dp-port-id = <6>;
 		mxl,xgmac-id = <6>;
 		mac = <&gsw_mac4>;
+		p34x-xpcs-node = <&lan_xpcs>;
 		managed = "in-band-status";
 		phy = <&gphy1>;
 		phy-mode = "sgmii";
@@ -393,11 +409,14 @@
 	lan4: interface@4 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_4";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <7>;
 		mxl,dp-port-id = <7>;
 		mxl,xgmac-id = <7>;
 		mac = <&gsw_mac5>;
+		p34x-xpcs-node = <&lan_xpcs>;
 		managed = "in-band-status";
 		phy = <&gphy2>;
 		phy-mode = "sgmii";
@@ -412,11 +431,14 @@
 	lan5: interface@5 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_5";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <8>;
 		mxl,dp-port-id = <8>;
 		mxl,xgmac-id = <8>;
 		mac = <&gsw_mac6>;
+		p34x-xpcs-node = <&lan_xpcs>;
 		managed = "in-band-status";
 		phy = <&gphy3>;
 		phy-mode = "sgmii";
@@ -431,6 +453,8 @@
 	wan0: interface@8 {
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth1";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,wan = <1>;
 		mxl,dp-dev-port = <9>;
@@ -599,26 +623,26 @@
 		tchsh-ns = <20>;
 		tslch-ns = <20>;
 
-        partition@0 {
-            reg = <0x0 0x80000>;
-            label = "uboot";
-            read-only;
-        };
+		partition@0 {
+			reg = <0x0 0x80000>;
+			label = "uboot";
+			read-only;
+		};
 
-        partition@c0000 {
-            reg = <0xc0000 0x500000>;
-            label = "uboot_env";
-        };
+		partition@c0000 {
+			reg = <0xc0000 0x500000>;
+			label = "uboot_env";
+		};
 
-        partition@800000 {
-            reg = <0x800000 0x800000>;
-            label = "image0";
-        };
+		partition@800000 {
+			reg = <0x800000 0x800000>;
+			label = "image0";
+		};
 
-        partition@1000000 {
-            reg = <0x1000000 0x20000>;
-            label = "image1";
-        };
+		partition@1000000 {
+			reg = <0x1000000 0x20000>;
+			label = "image1";
+		};
 	};
 };
 

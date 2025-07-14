@@ -3,12 +3,6 @@
  * Copyright (C) 2024 MaxLinear, Inc.
  */
 
-&reserved_mem {
-linux,cma {
-	size = <0x29400000>;
-	};
-};
-
 /* 10G WAN PHY as LAN */
 
 /* Select 10G PHY WAN */
@@ -22,13 +16,9 @@ linux,cma {
 };
 
 /* Enable 10G PHY WAN */
-&gpio0 {
-	10GPHY_gpio29 {
-		gpio-hog;
-		gpios = <29 GPIO_ACTIVE_HIGH>;
-		output-high;
-		line-name = "10G_PHY_WAN_enable";
-	};
+&WAN_PHY_gpio29   {
+	/delete-property/ output-low;
+	output-high;
 };
 
 / {
@@ -51,6 +41,10 @@ linux,cma {
 	status = "okay";
 };
 
+&gsw_mac0 {
+	rxfifo_err_thresh = <1>;
+};
+
 &lan1 {
 	status = "okay";
 
@@ -61,6 +55,7 @@ linux,cma {
 	mac = <&gsw_mac0>;
 	phy-mode = "usxgmii";
 	phy = <&rtl8261phy_wan>;
+	mxl,mac_link_up_delay_ms = <3000>;
 
 	lan1_eth: ethernet@1 {
 		compatible = "mxl,pdi-port";
@@ -121,107 +116,12 @@ linux,cma {
 				<8 53 1 10>,
 				<9 38 2 11>,
 				<10 54 1 11>;
-	mxl,wan-mode = <LPID_WAN_DOCSIS>;
-};
-
-&cqm_lgm {
-	cqm,bm_pools {
-		pool@1 {
-			pool,pool-num_buffs = <0 59840>;
-		};
-		pool@2 {
-			pool,pool-num_buffs = <0 1600>;
-		};
-		pool@3 {
-			pool,pool-num_buffs = <0 169536>;
-		};
-		pool@4 {
-			pool,pool-num_buffs = <0 320>;
-		};
-		pool@6 {
-			pool,pool-num_buffs = <0 128>;
-		};
-		pool@7 {
-			pool,pool-num_buffs = <0 704>;
-		};
-		pool@8 {
-			pool,pool-num_buffs = <0 3840>;
-		};
-		pool@9 {
-			pool,pool-num_buffs = <0 640>;
-		};
-	};
-	cqm,bm_policies {
-		/delete-node/ bm_policy@6;
-		/delete-node/ bm_policy@7;
-		/delete-node/ bm_policy@8;
-		/delete-node/ bm_policy@9;
-		/delete-node/ bm_policy@10;
-		/delete-node/ bm_policy@11;
-		/delete-node/ bm_policy@12;
-		/delete-node/ bm_policy@13;
-		/delete-node/ bm_policy@14;
-		/delete-node/ bm_policy@15;
-		/delete-node/ bm_policy@16;
-
-		bm_policy@0 {
-			policy,alloc = <0 0 64 1938>;
-		};
-		bm_policy@1 {
-			policy,alloc = <0 0 64 1830>;
-		};
-		bm_policy@2 {
-			policy,alloc = <0 0  160 164>;
-		};
-		bm_policy@3 {
-			policy,alloc = <0 0 8083 10103>;
-		};
-		bm_policy@4 {
-			policy,alloc = <0 0 128 128>;
-		};
-		bm_policy@18 {
-			policy,alloc = <0 0 128 128>;
-		};
-		bm_policy@19 {
-			policy,alloc = <0 0 704 704>;
-		};
-		bm_policy@20 {
-			policy,alloc = <0 0 3840 3840>;
-		};
-		bm_policy@21 {
-			policy,alloc = <0 0 640 640>;
-		};
-		bm_policy@22 {
-			policy,alloc = <40000 48098>;
-		};
-		bm_policy@23 {
-			policy,alloc = <80000 88098>;
-		};
-		bm_policy@24 {
-			policy,alloc = <0 0 57966 59384>;
-		};
-		bm_policy@25 {
-			policy,alloc = <0 0 863 871>;
-		};
-		bm_policy@27 {
-			policy,alloc = <0 0 192 192>;
-		};
-	};
-};
-
-&sys_pool {
-	size = <0x16d08000>;
-	perm = <NOC_RD_PERM>;
-};
-
-&cpu_pool {
-	size = <0x3040000>;
-	perm = <NOC_RW_PERM>;
 };
 
 &ppv4 {
 	qos@1000000 {
 		wred-total-resources = <425984>;
+		wred-p-const = <0>;
 	};
 };
 

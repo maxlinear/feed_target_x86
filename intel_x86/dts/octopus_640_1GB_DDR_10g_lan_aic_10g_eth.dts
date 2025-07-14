@@ -6,7 +6,6 @@
 
 /dts-v1/;
 #include "octopus_640_base.dtsi"
-#include "lgmc_emta_1GB.dtsi"
 #include "octopus_640_10g_lan.dtsi"
 #include "octopus_640_10g_phy_wan.dtsi"
 #include "octopus_emmc.dtsi"
@@ -14,3 +13,9 @@
 #include "octopus_640_gpy215.dtsi"
 #include "voice.dtsi"
 #include "octopus_640_aic_10g_eth.dtsi"
+
+#include "config_ddr_1gb.dtsi"
+#include "config_subsystem_gw.dtsi"
+#include "config_wave6x4.dtsi"
+#include "bm_main_eth.dtsi"
+#include "lgmc_emta_1GB.dtsi"  /* Should be removed after review */

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2021-2022 MaxLinear, Inc.
+ * Copyright (C) 2021-2025 MaxLinear, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License, as published by the Free
@@ -17,7 +17,12 @@
  */
 
 /dts-v1/;
-#include "osp_tb341.dts"
+#include "osp_tb341_base.dtsi"
+
+#include "config_ddr_2gb.dtsi"
+#include "config_subsystem_gw.dtsi"
+#include "config_wave6x4.dtsi"
+#include "bm_main_pon.dtsi"
 
 / {
 	wan {
@@ -69,16 +74,6 @@
 
 &hsiol_xpcs1 {
 	status = "disabled";
-};
-
-&sys_pool {
-	size = <0x2D508000>;
-	perm = <NOC_RD_PERM>;
-};
-
-&cpu_pool {
-	size = <0x3600000>;
-	perm = <NOC_RW_PERM>;
 };
 
 &gpio2 {

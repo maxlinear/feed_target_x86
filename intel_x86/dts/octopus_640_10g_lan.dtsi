@@ -36,6 +36,16 @@
 	};
 };
 
+/* Put P34x in reset since 10G LAN is in use */
+&gpio2 {
+	p34x_phy_reset {
+		gpio-hog;
+		gpios = <11 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "p34X_PHY_in_reset";
+	};
+};
+
 /* Select 10GPHY */
 &gpio0 {
 	10GPHY_gpio15 {
@@ -46,13 +56,9 @@
 	};
 };
 
-&ssogpio {
-	10GPHY_gpio18 { /* put 10G PHY out of reset */
-		gpio-hog;
-		gpios = <18 GPIO_ACTIVE_HIGH>;
-		output-high;
-		line-name = "10G_PHY_enable";
-	};
+&LAN_PHY_gpio18 { /* put 10G PHY out of reset */
+	/delete-property/ output-low;
+	output-high;
 };
 
 &rtl8261phy_lan {
@@ -63,6 +69,7 @@
 	macsec_ig = <&eip160_ig>;
 	macsec_eg = <&eip160_eg>;
 	xpcs = <&lan_xpcs>;
+	rxfifo_err_thresh = <1>;
 };
 
 &lan1 {

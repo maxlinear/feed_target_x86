@@ -3,16 +3,64 @@
  * Copyright (C) 2023 MaxLinear, Inc.
  */
 
-&cqm_sram {
-	reg = <0x0 0x2eb00>;
-};
 
-&toe_sram {
-	reg = <0x2eb00 0x51500>;
-};
-
-&ppv4 {
-	qos@1000000 {
-		wred-total-resources = <425984>;
+/ {
+	wan {
+		ifname = "VANI0";
 	};
 };
+
+&pon_eth {
+	status = "okay";
+};
+
+&pon_ptp0 {
+	status = "okay";
+};
+
+&pon_ptp1 {
+	status = "okay";
+};
+
+&sfp_wan0 {
+	status = "disabled";
+};
+
+&ponmbox {
+	status = "okay";
+	/* I2C bus to the optical WAN transceiver */
+	sfp = <&i2c2>;
+};
+
+&vuni {
+	status = "okay";
+	vani@0 {
+		mxl,extra-subif = "VANI0", "VUNI0_0", "VUNI0_1", "VUNI0_2";
+		mxl,extra-subif-type = <SUBIF_VANI0_0 SUBIF_VUNI0_0 SUBIF_VUNI0_1 SUBIF_VUNI0_2>;
+		mxl,extra-subif-domain = <VUNI_BR_DOMAIN_NO VUNI_BR_DOMAIN_UC VUNI_BR_DOMAIN_MC VUNI_BR_DOMAIN_BC>;
+		mxl,num_ip_host = <2>;
+	};
+};
+
+&wan0 {
+	status = "disabled";
+};
+
+/* WAN XPCS PHY */
+&wan_xpcs_phy {
+	status = "disabled";
+};
+
+/* XPCS setting */
+&wan_xpcs {
+	status = "disabled";
+};
+
+&gpio2 {
+	/delete-node/ sfp_eth_tx_disable;
+};
+
+&i2c2 {
+	status = "okay";
+};
+

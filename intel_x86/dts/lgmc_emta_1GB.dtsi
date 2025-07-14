@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2023 MaxLinear, Inc.
+ * Copyright (C) 2023-2024 MaxLinear, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License, as published by the Free
@@ -18,7 +18,7 @@
 
 &reserved_mem {
 	linux,cma {
-		size = <0x15800000>;
+		size = <0xDC00000>;
 	};
 };
 
@@ -69,4 +69,18 @@
 &cpu_pool {
 	size = <0x3060000>;
 	perm = <NOC_RW_PERM>;
+};
+&rw_pool {
+	size = <0x1470000>;
+	perm = <NOC_RW_PERM>;
+};
+
+&ro_pool {
+	size = <0x600000>;
+	perm = <NOC_RD_PERM>;
+};
+
+&ppv4 {
+	num-sessions = <32768>; /* 32K */
+	dma_nioc_sz =  <0x1368000>; /* 19MB from rw_pool - depend on num-sessions param */
 };

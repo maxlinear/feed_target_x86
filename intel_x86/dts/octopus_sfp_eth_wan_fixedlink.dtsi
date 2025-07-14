@@ -26,10 +26,6 @@
 	status = "disabled";
 };
 
-&lpid_config {
-	mxl,wan-mode = <LPID_WAN_ETH>;
-};
-
 &wan0 {
 	status = "okay";
 

@@ -494,6 +494,22 @@ endef
 
 $(eval $(call KernelPackage,mxl_icc_driver))
 
+define KernelPackage/mxl-tee
+ SUBMENU:= MaxLinear
+ TITLE:= MaxLinear mxl-tee
+ DEPENDS:= @TARGET_intel_x86_lgm
+ KCONFIG:= \
+	CONFIG_TEE=y \
+	CONFIG_MXL_SEC_GEN_POOL=y \
+	CONFIG_MXLTEE=y
+endef
+ 
+define KernelPackage/mxl-tee/description
+  mxl-tee module support
+endef
+
+$(eval $(call KernelPackage,mxl-tee))
+
 define KernelPackage/intel_noc_firewall
  SUBMENU:= MaxLinear
  TITLE:=  LGM Noc firewall driver enabling
@@ -557,3 +573,41 @@ define KernelPackage/ebt-prio/description
 endef
 
 $(eval $(call KernelPackage,ebt-prio))
+
+MXL_SND_AUTOLOAD:= mxl-i2s snd-soc-max98357a snd-soc-simple-card-utils \
+		   snd-soc-simple-card
+define KernelPackage/mxl_snd
+ SUBMENU:= MaxLinear
+ TITLE:= MaxLinear sound package via MAX98357a codec + I2S
+ DEPENDS:= @TARGET_intel_x86_lgm +kmod-sound-core +kmod-sound-soc-core
+ KCONFIG:= \
+	CONFIG_SND_MXL_I2S=m \
+	CONFIG_SND_SOC_MAX98357A=m \
+	CONFIG_SND_SIMPLE_CARD=m
+ FILES:= $(LINUX_DIR)/sound/soc/mxl/mxl-i2s.ko \
+	 $(LINUX_DIR)/sound/soc/codecs/snd-soc-max98357a.ko \
+	 $(LINUX_DIR)/sound/soc/generic/snd-soc-simple-card-utils.ko \
+	 $(LINUX_DIR)/sound/soc/generic/snd-soc-simple-card.ko
+ AUTOLOAD:=$(call AutoLoad,90,$(MXL_SND_AUTOLOAD))
+endef
+
+define KernelPackage/mxl_snd/description
+  MaxLinear sound package via MAX98357a codec + I2S
+endef
+
+$(eval $(call KernelPackage,mxl_snd))
+
+define KernelPackage/mxl-xpcs
+ SUBMENU:= MaxLinear
+ TITLE:= MaxLinear XPCS Driver (Module Support)
+ DEPENDS:= @TARGET_intel_x86_lgm
+ KCONFIG:= CONFIG_MXL_XPCS
+ FILES:= $(LINUX_DIR)/drivers/net/datapath/xpcs/mxl_xpcs.ko
+ AUTOLOAD:=$(call AutoLoad,94,mxl_xpcs)
+endef
+
+define KernelPackage/mxl-xpcs/description
+  MaxLinear XPCS Driver
+endef
+
+$(eval $(call KernelPackage,mxl-xpcs))

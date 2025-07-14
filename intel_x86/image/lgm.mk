@@ -10,37 +10,30 @@ FAKEROOT_PROG:=$(if $(CONFIG_PACKAGE_ugw-fakeroot), \
 
 export STAGING_PREFIX=$(STAGING_DIR_HOST)
 
+ifdef CONFIG_WAVE_700
+  export DTS_CPPFLAGS += -D CONFIG_WAVE_700
+endif
+
+ifdef CONFIG_WAVE_6X4
+  export DTS_CPPFLAGS += -D CONFIG_WAVE_6X4
+endif
+
+ifdef CONFIG_OSP_TB341_v1_PON_OVERLAY
+  export DTS_CPPFLAGS += -D CONFIG_OSP_TB341_v1_PON_OVERLAY
+endif
+
 # Standalone dtb generation. The existing 'append-dtb' does not pass
 # additional cflags argument (which is required in lgm for additional
 # include flag).
 define Build/dtb
-	$(call Image/BuildDTB,$(DEVICE_DTS_DIR)/$(1).dts,$@.dtb,-I$(LINUX_DIR)/include)
+	$(call Image/BuildDTB,$(DEVICE_DTS_DIR)/$(1).dts,$@.dtb,-I$(LINUX_DIR)/include,-@)
 	cat $@.dtb >> $@
 endef
 
 # generates dtb-ovarlay file.
 define Build/dtbo
-	$(call Image/BuildDTBO,$(DEVICE_DTS_DIR)/overlay_pon.dts,$@.dtbo,-I$(LINUX_DIR)/include)
+	$(call Image/BuildDTBO,$(DEVICE_DTS_DIR)/$(1).dts,$@.dtbo,-I$(LINUX_DIR)/include,-@)
 	cat $@.dtbo >> $@
-endef
-
-# $(1) source dts file
-# $(2) target dtb file
-# $(3) extra CPP flags
-# $(4) extra DTC flags
-define Image/BuildDTB/sub
-	$(TARGET_CROSS)cpp -nostdinc -x assembler-with-cpp \
-		$(DTS_CPPFLAGS) \
-		-I$(DTS_DIR) \
-		-I$(DTS_DIR)/include \
-		-I$(LINUX_DIR)/include/ \
-		-undef -D__DTS__ $(3) \
-		-o $(2).tmp $(1)
-	$(LINUX_DIR)/scripts/dtc/dtc -O dtb \
-		-i$(dir $(1)) $(4) \
-	-@ \
-		-o $(2) $(2).tmp
-	$(RM) $(2).tmp
 endef
 
 ifeq ($(CONFIG_INTEL_X86_KERNEL_METADATA),y)
@@ -82,6 +75,8 @@ define Build/sign-image
 		-attribute 0x80000000=$(CONFIG_INTEL_X86_KERNEL_BASEADDR) \
 		-attribute 0x80000002=$(CONFIG_INTEL_X86_KERNEL_BASEADDR) \
 		-attribute 0x80000006=0x0 \
+		-attribute 0x80000009=0x00000004 \
+		-attribute 0x80000007=$(CONFIG_INTEL_X86_KERNEL_FLEXI_ROLLBACKID) \
 		-attribute rollback=$(CONFIG_INTEL_X86_KERNEL_ROLLBACKID) \
 		-outfile $@.tmp
 	mv $@.tmp $@
@@ -96,12 +91,15 @@ define Build/sign-rootfs
 		-attribute 0x80000000=0x40000000 \
 		-attribute 0x80000002=0x40000000 \
 		-attribute 0x80000006=0x0 \
+		-attribute 0x80000009=0x00000005 \
+		-attribute 0x80000007=$(CONFIG_INTEL_X86_ROOTFS_FLEXI_ROLLBACKID) \
 		-attribute rollback=$(CONFIG_INTEL_X86_ROOTFS_ROLLBACKID) \
 		-infile $@ \
 		-outfile $@.tmp
 	mv $@.tmp $@
 endef
 define Build/fullimage
+	echo "Creating $@ with dtb file $(3) "
 	# wrap rootfs to uImage
 	dd if=$(2) of=$@.rootfs bs=$(1) conv=sync;
 	mkimage -A $(LINUX_KARCH) -O linux -C lzma -T filesystem -a 0x00  \
@@ -110,7 +108,7 @@ define Build/fullimage
 
 	echo "Sigining and generating the respective dtb.signed files"
 	$(CONFIG_INTEL_X86_SIGNTOOL) sign -type BLw -prikey $(CONFIG_INTEL_X86_PRIVATE_KEY) -wrapkey $(CONFIG_INTEL_X86_PROD_UNIQUE_KEY) -encattr -kdk -sm -secure \
-	-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x08000000 -attribute 0x80000006=0x0 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
+	-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x0$(4) -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
 	-cert $(CONFIG_INTEL_X86_CERTIFICATION) -infile $(3) -outfile $@.dtb.signed
 
 	@echo "Waiting for the file to get signed.."
@@ -125,7 +123,7 @@ define Build/fullimage
 		fi; \
 		echo "File not found..."; \
 		$(CONFIG_INTEL_X86_SIGNTOOL) sign -type BLw -prikey $(CONFIG_INTEL_X86_PRIVATE_KEY) -wrapkey $(CONFIG_INTEL_X86_PROD_UNIQUE_KEY) -encattr -kdk -sm -secure \
-		-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x08000000 -attribute 0x80000006=0x0 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
+		-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x0$(4) -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
 		-cert $(CONFIG_INTEL_X86_CERTIFICATION) -infile $(3) -outfile $@.dtb.signed; \
 		tries=`expr $$tries + 1`; \
 		echo "trail value is $$tries"; \
@@ -135,7 +133,7 @@ define Build/fullimage
 	fi; \
 
 	# wrap device tree blob to u-boot fit image
-	dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync;
+#	dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync;
 
 	[ -f "$@.dtb.signed" ] && dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync || sync && dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync || echo "Failed!" > /dev/null
 
@@ -143,6 +141,7 @@ define Build/fullimage
 		-f auto -n 'Flattened Device Tree' \
 		-d $@.dtb $@.dtb.pad
 
+	echo "Concatenating $(IMAGE_KERNEL) $@.rootfs.pad $@.dtb.pad into $@.tmp"
 	cat $(IMAGE_KERNEL) $@.rootfs.pad $@.dtb.pad > $@.tmp
 
 	mkimage -A $(LINUX_KARCH) -O linux -T multi -a 0x00 -C none \
@@ -217,13 +216,13 @@ endef
 endif
 
 # generates dtb file with basedtb (eth dtb) and overlay PON dtbo.
-define Build/overlay-image
-  mkdir -p $(BIN_DIR)/overlay-images
-  BASE_DTB_FILE=$(basename $(notdir $(2))); \
-  sed -e 's@DTBO_FILE@$(1)@g' -e 's@DTB_FILE@$(2)@g' overlay_pon.its > $(KDIR)/tmp/$$BASE_DTB_FILE-overlay_pon.its; \
-  PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$$BASE_DTB_FILE-overlay_pon.its $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.itb; \
-  mv -v $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.itb $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.dtb; \
-  cp -vf $(KDIR)/tmp/$$BASE_DTB_FILE-ov_pon.dtb $(BIN_DIR)/overlay-images/$$BASE_DTB_FILE-ov_pon.dtb
+define Build/overlay-dtb
+  mkdir -p $(BIN_DIR)/single-images
+  BASE_DTB_FILE=$(basename $(notdir $@)); \
+  sed -e 's@DTBO_FILE@$(1)@g' -e 's@DTB_FILE@$(2)@g' overlay_pon.its > $(KDIR)/tmp/$$BASE_DTB_FILE.its; \
+  PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$$BASE_DTB_FILE.its $(KDIR)/tmp/$$BASE_DTB_FILE.itb; \
+  mv -v $(KDIR)/tmp/$$BASE_DTB_FILE.itb $(KDIR)/tmp/$$BASE_DTB_FILE.dtb; \
+  cp -vf $(KDIR)/tmp/$$BASE_DTB_FILE.dtb $(BIN_DIR)/single-images/
 endef
 
 define Build/generate-ext4fs
@@ -264,45 +263,53 @@ define Device/Build/image-non-rootfs
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs
 	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)
-	[  "$(suffix $(1))" = ".dtbo" ] && mv -v $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)
+	[  "$(suffix $(1))" = ".dtbo" ] && cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)
 
 endef
 endif
 
 define Device/Build/fullimage
   $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-  $$(_TARGET): $(if $(findstring pon,$(basename $(1))),,$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage)
   $(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage,$(1)))
-  $(if $(findstring pon,$(basename $(1))),,$(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage,$(basename $(1))_ov.img)))
 
   $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1))):
 	@rm -rf $$@
 	[ -f $$(word 1,$$^) ]
 	$$(call concat_cmd,$(IMAGE/$(word 4,$(IMAGE/$(1)))))
 
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))-ov_pon.dtb : $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-ov_pon.dtbo-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))
-	$(if $(findstring pon,$(basename $(1))),,$$(call Build/overlay-image,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-ov_pon.dtbo,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))))
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))-ov_pon.dtb
-	@rm -rf $$@
-	[ -f $$(word 1,$$^) ]
-	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE),$(if $(findstring pon,$(basename $(1))),,$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))-ov_pon.dtb)))
-
   $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))
 	@rm -rf $$@
 	[ -f $$(word 1,$$^) ]
-	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE),$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))))
+	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE),$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1))),8000000))
 	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_FIT),$$(call Build/fitimage,$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))))
 
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img-fullimage $(BIN_DIR)/overlay-images/$(DEVICE_IMG_PREFIX)-$(basename $(1))_ov.img
-
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)
+
+  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
+
+endef
+
+define Device/Build/singlefullimage
+  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
+  $(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage,$(1)))
+
+  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1))) : $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))
+	$$(call Build/overlay-dtb,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo-image-non-rootfs,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1))))
+
+  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1)))
+	@rm -rf $$@
+	[ -f $$(word 1,$$^) ]
+	$(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE),$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1))),8100000))
+
+  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
+
+  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(1)
+
+  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 
 endef
 
@@ -325,6 +332,10 @@ define Device/Build
 
   $$(eval $$(foreach image,$$(FULLIMAGES), \
     $$(call Device/Build/fullimage,$$(image),$(1))))
+
+  $(if $(CONFIG_INTEL_X86_SINGLE_IMAGE), \
+  $$(eval $$(foreach image,$$(SINGLE_FULLIMAGE), \
+    $$(call Device/Build/singlefullimage,$$(image),$(1)))))
 
 endef
 
@@ -452,6 +463,7 @@ define Device/LGM_UGW
   IMAGE/lgp_b0_fullimage.img := fullimage 16 squashfs lgp_b0.dtb
   IMAGE/lgm_c0_1GB_DDR_mxl86249.dtb := dtb octopus_640_1GB_DDR_mxl86249
   IMAGE/lgm_c0_1GB_DDR_10g_lan.dtb := dtb octopus_640_1GB_DDR_10g_lan
+  IMAGE/lgm_c0_1GB_DDR_mxl86249_qspinand.dtb := dtb octopus_640_1GB_DDR_mxl86249_qspinand
   IMAGE/octopus_851_fullimage.img := fullimage 16 squashfs octopus_851.dtb
   IMAGE/octopus_641_fullimage.img := fullimage 16 squashfs octopus_641.dtb
   IMAGE/octopus_641_pon_fullimage.img := fullimage 16 squashfs octopus_641_pon.dtb
@@ -491,7 +503,8 @@ define Device/LGM_UGW
 		octopus_641_10g_lan_eth_nand.dtb \
 		octopus_851_nand.dtb \
 		lgm_c0_1GB_DDR_mxl86249.dtb \
-		lgm_c0_1GB_DDR_10g_lan.dtb
+		lgm_c0_1GB_DDR_10g_lan.dtb \
+		lgm_c0_1GB_DDR_mxl86249_qspinand.dtb
 
   FULLIMAGES := lgp_b0_fullimage.img lgp_b0_pon_fullimage.img octopus_851_fullimage.img octopus_641_fullimage.img octopus_641_pon_fullimage.img \
 		octopus_851_wan_phy_fullimage.img octopus_851_pon_fullimage.img octopus_851_wav700_eth_fullimage.img octopus_851_wav700_pon_fullimage.img octopus_641_10g_lan_pon_fullimage.img octopus_641_wav700_eth_fullimage.img octopus_641_wav700_pon_fullimage.img \
@@ -612,14 +625,19 @@ define Device/LGM_PRPL
   $(Device/LGM_GENERIC)
   UIMAGE_NAME:=$(if $(UIMAGE_NAME),PRPL-$(UIMAGE_NAME))
   DEVICE_TITLE := LGM Model for prplOS
+  IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/lgp_b0.dtb := dtb lgp_b0
   IMAGE/lgp_b0_pon.dtb := dtb lgp_b0_pon
+  IMAGE/lgp.dtb := dtb lgp_b0
   IMAGE/lgp_b0_fullimage.img := fullimage 16 squashfs lgp_b0.dtb
   IMAGE/lgp_b0_pon_fullimage.img := fullimage 16 squashfs lgp_b0_pon.dtb
+  IMAGE/lgp_fullimage.img := fullimage 16 squashfs lgp_b0.dtb lgp.dtb
   IMAGES += kernel.bin \
+        overlay.dtbo \
         lgp_b0.dtb \
         lgp_b0_pon.dtb
   FULLIMAGES := lgp_b0_fullimage.img lgp_b0_pon_fullimage.img
+  SINGLE_FULLIMAGE := lgp_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -645,14 +663,14 @@ TARGET_DEVICES += LGM_C0_HAPS_PRPL
 define Device/PRPL_C0
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM C Model for prplOS
-  IMAGE/1GB_DDR_mxl86249.dtb := dtb octopus_640_1GB_DDR_mxl86249
-  IMAGE/1GB_DDR_10g_lan.dtb := dtb octopus_640_1GB_DDR_10g_lan
-  IMAGE/1GB_DDR_mxl86249_fullimage.img := fullimage 16 squashfs 1GB_DDR_mxl86249.dtb
-  IMAGE/1GB_DDR_10g_lan_fullimage.img := fullimage 16 squashfs 1GB_DDR_10g_lan.dtb
+  IMAGE/2GB_DDR_10g_lan.dtb := dtb octopus_640_2GB_DDR_10g_lan
+  IMAGE/2GB_DDR_10g_lan_pon.dtb := dtb octopus_640_10g_lan_pon
+  IMAGE/2GB_DDR_10g_lan_wav700_eth_fullimage.img := fullimage 16 squashfs 2GB_DDR_10g_lan.dtb
+  IMAGE/2GB_DDR_10g_lan_wav700_pon_fullimage.img := fullimage 16 squashfs 2GB_DDR_10g_lan_pon.dtb
   IMAGES += kernel.bin \
-	    1GB_DDR_mxl86249.dtb \
-	    1GB_DDR_10g_lan.dtb
-  FULLIMAGES := 1GB_DDR_mxl86249_fullimage.img 1GB_DDR_10g_lan_fullimage.img
+            2GB_DDR_10g_lan.dtb \
+      	    2GB_DDR_10g_lan_pon.dtb
+  FULLIMAGES := 2GB_DDR_10g_lan_wav700_eth_fullimage.img 2GB_DDR_10g_lan_wav700_pon_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -663,14 +681,19 @@ TARGET_DEVICES += PRPL_C0
 define Device/PRPL_OSP_TB341
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM Model for prplOS osp tb341
+  IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/osp_tb341.dtb := dtb osp_tb341
   IMAGE/osp_tb341_pon.dtb := dtb osp_tb341_pon
+  IMAGE/osp_v1.dtb := dtb osp_tb341
   IMAGE/osp_tb341_fullimage.img := fullimage 16 squashfs osp_tb341.dtb
   IMAGE/osp_tb341_pon_fullimage.img := fullimage 16 squashfs osp_tb341_pon.dtb
+  IMAGE/osp_v1_fullimage.img := fullimage 16 squashfs osp_tb341.dtb osp_v1.dtb
   IMAGES += kernel.bin \
+        overlay.dtbo \
         osp_tb341.dtb \
         osp_tb341_pon.dtb
   FULLIMAGES := osp_tb341_fullimage.img osp_tb341_pon_fullimage.img
+  SINGLE_FULLIMAGE := osp_v1_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -681,17 +704,20 @@ TARGET_DEVICES += PRPL_OSP_TB341
 define Device/PRPL_OSP_TB341_v2
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM Model for prplOS osp tb341 v2
-  IMAGE/ov_pon.dtbo := dtbo overlay_pon
+  IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/osp_tb341_v2_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
   IMAGE/osp_tb341_v2_wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
+  IMAGE/osp_tb341_v2_wav700.dtb := dtb osp_tb341_v2_wav700_eth
   IMAGE/osp_tb341_v2_wav700_eth_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_eth.dtb
   IMAGE/osp_tb341_v2_wav700_pon_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_pon.dtb
+  IMAGE/osp_tb341_v2_wav700_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_eth.dtb osp_tb341_v2_wav700.dtb
   IMAGES += kernel.bin \
-		ov_pon.dtbo \
+		overlay.dtbo \
 		osp_tb341_v2_wav700_eth.dtb \
 		osp_tb341_v2_wav700_pon.dtb
   FULLIMAGES := osp_tb341_v2_wav700_eth_fullimage.img \
 		osp_tb341_v2_wav700_pon_fullimage.img
+  SINGLE_FULLIMAGE := osp_tb341_v2_wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -701,16 +727,21 @@ TARGET_DEVICES += PRPL_OSP_TB341_v2
 
 define Device/PRPL_OSPv2_WGRTD159BE_B
   $(Device/LGM_GENERIC)
-  DEVICE_TITLE := LGM Model for prplOS osp tb341 v2
-  IMAGE/wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
-  IMAGE/wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
+  DEVICE_TITLE := LGM Model for prplOS osp wgrtd159be b v2
+  IMAGE/overlay.dtbo := dtbo overlay_pon
+  IMAGE/wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
+  IMAGE/wav700_pon.dtb := dtb osp_wgrtd159be_b_v2_wav700_pon
+  IMAGE/wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
   IMAGE/wav700_eth_fullimage.img := fullimage 16 squashfs wav700_eth.dtb
   IMAGE/wav700_pon_fullimage.img := fullimage 16 squashfs wav700_pon.dtb
+  IMAGE/wav700_fullimage.img := fullimage 16 squashfs wav700_eth.dtb wav700.dtb
   IMAGES += kernel.bin \
+		overlay.dtbo \
 		wav700_eth.dtb \
 		wav700_pon.dtb
   FULLIMAGES := wav700_eth_fullimage.img \
 		wav700_pon_fullimage.img
+  SINGLE_FULLIMAGE := wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -718,52 +749,71 @@ define Device/PRPL_OSPv2_WGRTD159BE_B
 endef
 TARGET_DEVICES += PRPL_OSPv2_WGRTD159BE_B
 
+define Device/PRPL_MB_URX_MINIFS
+  $(Device/LGM_GENERIC)
+  DEVICE_TITLE := LGM CBSP B-Step minifs Model
+  IMAGE/851_eth.dtb := dtb octopus_851_wav700_eth
+  IMAGE/851_eth_fullimage.img := fullimage 16 squashfs 851_eth.dtb
+  IMAGES += kernel.bin \
+         851_eth.dtb
+  FULLIMAGES := 851_eth_fullimage.img
+  ROOTFS := fs.rootfs
+  ROOTFS_PREPARE := add-servicelayer-schema
+  DEVICE_PACKAGES := $(PM_PACKAGES)\
+		     $(UGW_DIAG_PACKAGES)
+endef
+TARGET_DEVICES += PRPL_MB_URX_MINIFS
+
 define Device/PRPL_MB_URX
   $(Device/LGM_GENERIC)
   DEVICE_TITLE := LGM CBSP B-Step Model for prplos
-  IMAGE/ov_pon.dtbo := dtbo overlay_pon
-  IMAGE/851.dtb := dtb octopus_851
-  IMAGE/851_pon.dtb := dtb octopus_851_pon
-  IMAGE/641.dtb := dtb octopus_641
-  IMAGE/641_pon.dtb := dtb octopus_641_pon
-  IMAGE/641_10g_lan_pon.dtb := dtb octopus_641_10g_lan_pon
-  IMAGE/641_10g_lan_eth.dtb := dtb octopus_641_10g_lan_eth
+  IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
+  IMAGE/641_wav700_eth_pm.dtb := dtb octopus_641_wav700_eth_pm
   IMAGE/641_wav700_pon.dtb := dtb octopus_641_wav700_pon
-  IMAGE/octopus_641_aic_10g_eth.dtb := dtb octopus_641_aic_10g_eth
-  IMAGE/octopus_641_aic_gsw140.dtb := dtb octopus_641_aic_gsw140
+  IMAGE/641_wav700_pon_pm.dtb := dtb octopus_641_wav700_pon_pm
   IMAGE/851_wav700_eth.dtb := dtb octopus_851_wav700_eth
   IMAGE/851_wav700_eth_pm.dtb := dtb octopus_851_wav700_eth_pm
   IMAGE/851_wav700_pon.dtb := dtb octopus_851_wav700_pon
   IMAGE/851_wav700_pon_pm.dtb := dtb octopus_851_wav700_pon_pm
-  IMAGE/851_fullimage.img := fullimage 16 squashfs 851.dtb
-  IMAGE/851_pon_fullimage.img := fullimage 16 squashfs 851_pon.dtb
-  IMAGE/641_fullimage.img := fullimage 16 squashfs 641.dtb
-  IMAGE/641_pon_fullimage.img := fullimage 16 squashfs 641_pon.dtb
-  IMAGE/641_10g_lan_pon_fullimage.img := fullimage 16 squashfs 641_10g_lan_pon.dtb
-  IMAGE/641_10g_lan_eth_fullimage.img := fullimage 16 squashfs 641_10g_lan_eth.dtb
+  IMAGE/641_wav700.dtb := dtb octopus_641_wav700_eth
+  IMAGE/641_wav700_pm.dtb := dtb octopus_641_wav700_eth_pm
+  IMAGE/851_wav700.dtb := dtb octopus_851_wav700_eth
+  IMAGE/851_wav700_pm.dtb := dtb octopus_851_wav700_eth_pm
   IMAGE/641_wav700_eth_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb
+  IMAGE/641_wav700_eth_fullimage_pm.img := fullimage 16 squashfs 641_wav700_eth_pm.dtb
   IMAGE/641_wav700_pon_fullimage.img := fullimage 16 squashfs 641_wav700_pon.dtb
-  IMAGE/octopus_641_aic_10g_eth_fullimage.img := fullimage 16 squashfs octopus_641_aic_10g_eth.dtb
-  IMAGE/octopus_641_aic_gsw140_fullimage.img := fullimage 16 squashfs octopus_641_aic_gsw140.dtb
+  IMAGE/641_wav700_pon_fullimage_pm.img := fullimage 16 squashfs 641_wav700_pon_pm.dtb
   IMAGE/851_wav700_eth_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb
   IMAGE/851_wav700_eth_fullimage_pm.img := fullimage 16 squashfs 851_wav700_eth_pm.dtb
   IMAGE/851_wav700_pon_fullimage.img := fullimage 16 squashfs 851_wav700_pon.dtb
   IMAGE/851_wav700_pon_fullimage_pm.img := fullimage 16 squashfs 851_wav700_pon_pm.dtb
+  IMAGE/641_wav700_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb 641_wav700.dtb
+  IMAGE/641_wav700_fullimage_pm.img := fullimage 16 squashfs 641_wav700_eth_pm.dtb 641_wav700_pm.dtb
+  IMAGE/851_wav700_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb 851_wav700.dtb
+  IMAGE/851_wav700_fullimage_pm.img := fullimage 16 squashfs 851_wav700_eth_pm.dtb 851_wav700_pm.dtb
   IMAGES += kernel.bin \
-		ov_pon.dtbo \
-		851.dtb 851_pon.dtb 641.dtb 641_pon.dtb octopus_641_aic_gsw140.dtb octopus_641_aic_10g_eth.dtb \
-		851_wav700_eth_pm.dtb \
-		851_wav700_pon_pm.dtb \
-		641_wav700_eth.dtb \
-		641_wav700_pon.dtb
-  FULLIMAGES := 851_fullimage.img 641_fullimage.img \
-		851_pon_fullimage.img 641_pon_fullimage.img 641_10g_lan_pon_fullimage.img 641_10g_lan_eth_fullimage.img \
-		641_wav700_eth_fullimage.img 641_wav700_pon_fullimage.img \
-		851_wav700_eth_fullimage.img 851_wav700_pon_fullimage.img \
-		851_wav700_eth_fullimage_pm.img 851_wav700_pon_fullimage_pm.img \
-		octopus_641_aic_gsw140_fullimage.img \
-		octopus_641_aic_10g_eth_fullimage.img
+	    overlay.dtbo \
+	    641_wav700_eth.dtb \
+	    641_wav700_eth_pm.dtb \
+	    641_wav700_pon.dtb \
+	    641_wav700_pon_pm.dtb \
+	    851_wav700_eth.dtb \
+	    851_wav700_eth_pm.dtb \
+	    851_wav700_pon.dtb \
+	    851_wav700_pon_pm.dtb
+  FULLIMAGES := 641_wav700_eth_fullimage.img \
+	  641_wav700_eth_fullimage_pm.img \
+	  641_wav700_pon_fullimage.img \
+	  641_wav700_pon_fullimage_pm.img \
+	  851_wav700_eth_fullimage.img \
+	  851_wav700_eth_fullimage_pm.img \
+	  851_wav700_pon_fullimage.img \
+	  851_wav700_pon_fullimage_pm.img
+  SINGLE_FULLIMAGE := 641_wav700_fullimage.img \
+    641_wav700_fullimage_pm.img \
+    851_wav700_fullimage.img \
+    851_wav700_fullimage_pm.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -880,7 +930,7 @@ define Device/URX851_UGW_DEBUG
   IMAGE/lgp_b0_fullimage.img := fullimage 16 squashfs lgp_b0.dtb
   IMAGE/lgm_c0_1GB_DDR_mxl86249.dtb := dtb octopus_640_1GB_DDR_mxl86249
   IMAGE/lgm_c0_1GB_DDR_10g_lan.dtb := dtb octopus_640_1GB_DDR_10g_lan
-  IMAGE/lgm_c0_1GB_DDR_10g_lan_pon.dtb := dtb octopus_640_1GB_DDR_10g_lan_pon
+  IMAGE/lgm_c0_10g_lan_pon.dtb := dtb octopus_640_10g_lan_pon
   IMAGE/octopus_851_fullimage.img := fullimage 16 squashfs octopus_851.dtb
   IMAGE/octopus_641_fullimage.img := fullimage 16 squashfs octopus_641.dtb
   IMAGE/octopus_851_wan_phy_fullimage.img := fullimage 16 squashfs octopus_851_wan_phy.dtb
@@ -900,7 +950,7 @@ define Device/URX851_UGW_DEBUG
   IMAGE/lgp_b0_pon_fullimage.img := fullimage 16 squashfs lgp_b0_pon.dtb
   IMAGE/lgm_c0_1GB_DDR_mxl86249_fullimage.img := fullimage 16 squashfs lgm_c0_1GB_DDR_mxl86249.dtb
   IMAGE/lgm_c0_1GB_DDR_10g_lan_fullimage.img := fullimage 16 squashfs lgm_c0_1GB_DDR_10g_lan.dtb
-  IMAGE/lgm_c0_1GB_DDR_10g_lan_pon_fullimage.img := fullimage 16 squashfs lgm_c0_1GB_DDR_10g_lan_pon.dtb
+  IMAGE/lgm_c0_10g_lan_pon_fullimage.img := fullimage 16 squashfs lgm_c0_10g_lan_pon.dtb
   IMAGES += kernel.bin lgp_b0.dtb lgp_b0_pon.dtb octopus_851.dtb octopus_641.dtb octopus_641_pon.dtb octopus_641_wav700_eth.dtb octopus_641_wav700_pon.dtb octopus_851_wan_phy.dtb octopus_851_fixedlink.dtb octopus_851_wav700_eth.dtb octopus_851_wav700_pon.dtb lgp_b0_fixedlink.dtb \
 		lgp_b0_docsis.dtb \
 		lgp_b0_wav700_docsis.dtb \
@@ -917,7 +967,7 @@ define Device/URX851_UGW_DEBUG
 		octopus_851_pon.dtb \
 		lgm_c0_1GB_DDR_mxl86249.dtb \
 		lgm_c0_1GB_DDR_10g_lan.dtb \
-		lgm_c0_1GB_DDR_10g_lan_pon.dtb
+		lgm_c0_10g_lan_pon.dtb
   FULLIMAGES := lgp_b0_fullimage.img lgp_b0_pon_fullimage.img octopus_851_fullimage.img octopus_641_fullimage.img \
 		octopus_851_wan_phy_fullimage.img octopus_851_pon_fullimage.img octopus_641_pon_fullimage.img octopus_851_wav700_eth_fullimage.img octopus_851_wav700_pon_fullimage.img octopus_641_10g_lan_pon_fullimage.img octopus_641_wav700_eth_fullimage.img octopus_641_wav700_pon_fullimage.img \
 		octopus_851_docsis_fullimage.img \
@@ -928,7 +978,7 @@ define Device/URX851_UGW_DEBUG
 		octopus_851_wav700_docsis_fullimage.img \
 		lgm_c0_1GB_DDR_mxl86249_fullimage.img \
 		lgm_c0_1GB_DDR_10g_lan_fullimage.img \
-		lgm_c0_1GB_DDR_10g_lan_pon_fullimage.img
+		lgm_c0_10g_lan_pon_fullimage.img
 
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema

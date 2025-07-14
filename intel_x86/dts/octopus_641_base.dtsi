@@ -45,6 +45,16 @@
 	status = "okay";
 };
 
+&p34x {
+	/delete-property/ interrupt-parent;
+	/delete-property/ interrupts;
+	reset-gpios = <&gpio2 11 GPIO_ACTIVE_LOW>; /* GPIO 75 */
+	interrupt-parent = <&gpio2>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mdint_gpio>;
+	interrupts = <13 8>;
+};
+
 /* Enable P34x */
 &lan_xpcs {
 	status = "okay";

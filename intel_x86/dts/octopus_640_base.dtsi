@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2024 MaxLinear, Inc.
+ * Copyright (C) 2024-2025 MaxLinear, Inc.
  */
 
 #include <dt-bindings/gpio/gpio.h>
@@ -19,6 +19,27 @@
 		/* ramfs */
 		bootargs = "earlycon console=ttyLTQ0,115200n8r root=/dev/ram init=/init maxcpus=2 initcall_debug=0 clk_ignore_unused loglevel=8";
 		stdout-path = "serial0";
+	};
+};
+
+/* Disable PHY by default */
+/* 10G WAN in reset*/
+&gpio0 {
+	WAN_PHY_gpio29: WAN_PHY_gpio29 {
+		gpio-hog;
+		gpios = <29 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "10G_PHY_WAN_enable";
+	};
+};
+
+/* 10G LAN in reset */
+&ssogpio {
+	LAN_PHY_gpio18: LAN_PHY_gpio18 { /* put 10G PHY out of reset */
+		gpio-hog;
+		gpios = <18 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "10G_PHY_LAN_enable";
 	};
 };
 
@@ -56,43 +77,21 @@
 	mxl-spinand@1 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "mxl,spinand";
-		reg = <1 1>;
-		linux,mtd-name = "nand.0";
-		spi-max-frequency = <50000000>;
+		compatible = "spi-nand";
+		reg = <1>;
+		spi-max-frequency = <100000000>;
 		page-size = <2048>;
 		block-size = <17>; // 2^17, 128KB
-		spi-tx-bus-width = <1>;
-		spi-rx-bus-width = <1>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_qspi &pinctrl_qspi_cs1>;
 
-		read-delay = <3>;
-		tshsl-ns = <200>;
-		tsd2d-ns = <255>;
-		tchsh-ns = <20>;
-		tslch-ns = <20>;
-
-		partition@0 {
-		    reg = <0x0 0x80000>;
-		    label = "uboot";
-		    read-only;
-		};
-
-		partition@c0000 {
-		    reg = <0xc0000 0x500000>;
-		    label = "uboot_env";
-		};
-
-		partition@800000 {
-		    reg = <0x800000 0x800000>;
-		    label = "image0";
-		};
-
-		partition@1000000 {
-		    reg = <0x1000000 0x20000>;
-		    label = "image1";
-		};
+		cdns,read-delay = <3>;
+		cdns,tshsl-ns = <200>;
+		cdns,tsd2d-ns = <255>;
+		cdns,tchsh-ns = <20>;
+		cdns,tslch-ns = <20>;
 	};
 };
 
@@ -212,8 +211,8 @@
 	aliases {
 		eth0_1 = &lan1; /* 10G  LAN    */
 		eth0_2 = &lan2; /* P34x port 0 */
-		eth0_3 = &lan3; /* P34x Port 1 */
-		eth0_4 = &lan4; /* P34x Port 2 */
+		eth0_3 = &lan3; /* P34x port 1 */
+		eth0_4 = &lan4; /* P34x port 2 */
 		eth0_5 = &lan5; /* P34x port 3 */
 		eth0_6 = &lan6; /* GSWP 120    */
 		eth0_7 = &lan7; /* GPY  215    */
@@ -322,10 +321,14 @@
 };
 
 &pvt {
-	rising-alarm = <85000>;
-	rising-hsyt = <84500>;
-	falling-alarm = <84500>;
-	falling-hsyt = <85000>;
+	rising-alarm  = <85000>;
+	rising-hsyt   = <80000>;
+	falling-alarm = <80000>;
+	falling-hsyt  = <85000>;
+
+	moortec,ts-coeff-g = <59700>;
+	moortec,ts-coeff-h = <204400>;
+	moortec,ts-coeff-j = <(-160)>;
 };
 
 &epu {
@@ -388,6 +391,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_1";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <5>;
 		mxl,dp-port-id = <5>;
@@ -396,6 +401,7 @@
 		mac = <&gsw_mac3>;
 		phy = <&rtl8261phy_lan>;
 		phy-mode = "usxgmii";
+		mxl,mac_link_up_delay_ms = <3000>;
 
 		lan1_eth: ethernet@1 {
 			compatible = "mxl,pdi-port";
@@ -410,6 +416,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_2";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <5>;
 		mxl,dp-port-id = <5>;
@@ -432,6 +440,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_3";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <6>;
 		mxl,dp-port-id = <6>;
@@ -454,6 +464,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_4";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <7>;
 		mxl,dp-port-id = <7>;
@@ -476,6 +488,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_5";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <8>;
 		mxl,dp-port-id = <8>;
@@ -498,7 +512,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
-
+		label = "eth0_6";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <10>;
 		mxl,dp-port-id = <10>;
@@ -524,6 +539,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_7";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <9>;
 		mxl,dp-port-id = <9>;
@@ -545,6 +562,8 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth0_8";
+		device_type = "network";
 		compatible = "mxl,pdi";
 		mxl,dp-dev-port = <4>;
 		mxl,dp-port-id = <4>;

@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2024-2025 MaxLinear, Inc.
+ */
+
+#ifndef _CONFIG_WAVE_
+#define _CONFIG_WAVE_
+
+#if !defined(CONFIG_WAVE_700)
+#define CONFIG_WAVE_700
+#endif
+
+&cqm_lgm {
+	mxl,wav700 = <1>;
+	mxl,wav-port-resv = <&wav_port_resv>;
+};
+
+&soc {
+	wav_port_resv: wav_port_resv {
+		mxl,wav-port-resv=<3 4>;
+	};
+};
+
+#else
+#error "wave configuration is already included"
+#endif /* _CONFIG_WAVE_ */

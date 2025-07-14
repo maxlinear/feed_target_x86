@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2024 MaxLinear, Inc.
+ * Copyright (C) 2024-2025 MaxLinear, Inc.
  */
 
 /* Select 10G PHY WAN */
@@ -14,13 +14,9 @@
 };
 
 /* Enable 10G PHY WAN */
-&gpio0 {
-	10GPHY_gpio29 {
-		gpio-hog;
-		gpios = <29 GPIO_ACTIVE_HIGH>;
-		output-high;
-		line-name = "10G_PHY_WAN_enable";
-	};
+&WAN_PHY_gpio29   {
+	/delete-property/ output-low;
+	output-high;
 };
 
 / {
@@ -43,8 +39,8 @@
 	status = "okay";
 };
 
-&lpid_config {
-	mxl,wan-mode = <LPID_WAN_ETH>;
+&gsw_mac0 {
+	rxfifo_err_thresh = <1>;
 };
 
 &eth {
@@ -53,6 +49,7 @@
 
 		#address-cells = <1>;
 		#size-cells = <0>;
+		label = "eth1";
 		compatible = "mxl,pdi";
 		mxl,wan = <1>;
 		mxl,dp-dev-port = <2>;
@@ -63,6 +60,7 @@
 		mac = <&gsw_mac0>;
 		phy-mode = "usxgmii";
 		phy = <&rtl8261phy_wan>;
+		mxl,mac_link_up_delay_ms = <3000>;
 
 		wan0_eth: ethernet@8 {
 			compatible = "mxl,pdi-port";

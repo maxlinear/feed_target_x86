@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2024-2025 MaxLinear, Inc.
+ */
+
+#ifndef _CONFIG_WAVE_
+#define _CONFIG_WAVE_
+
+#if !defined(CONFIG_WAVE_6X4)
+#define CONFIG_WAVE_6X4
+#endif
+
+#else
+#error "wave configuration is already included"
+#endif /* _CONFIG_WAVE_ */
+
