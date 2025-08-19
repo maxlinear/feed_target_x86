@@ -53,18 +53,18 @@ CONFIG_MAX_RBE_PER_PART=4
 CONFIG_SPL_PAD_SIZE=0x32000
 CONFIG_COPIES_OF_RBE=0x1
 CONFIG_RECOVERY_SPL_PAD_SIZE=0x17000
-CONFIG_PREBOOT="if gpt verify mmc 0 ${partitions}; then echo; else run init_user_partition; fi; run set_dtb_bank; echo; wdt dev wdt@e2500000; wdt stop"
+CONFIG_PREBOOT="if gpt verify mmc 0; then echo; else run init_user_partition; fi; echo; wdt dev wdt@e2500000; wdt stop"
 CONFIG_BOOTDELAY=5
 CONFIG_MAX_BOOT_COUNTER=3
 CONFIG_LOADADDR=0x8200000
-CONFIG_DTB_LOADADDR=0x8000000
+CONFIG_DTB_LOADADDR=0x8100000
 CONFIG_ROOTFS_LOADADDR=0x40000000
 CONFIG_BOOTCOMMAND="if test ${image_failure} -ne 0; then setenv image_failure 0; run recover_boot; else wdt start 60000 && run check_upgrade; run flash_flash; reset; fi;"
 CONFIG_FLASHARGS="setenv bootargs phram.phram=RAM0,0x${rootfs_loadaddr},0x${filesystem_size} mtdparts=RAM0:0x${filesystem_size}@0x00000000(RootFileSystem-RAM) root=/dev/mtdblock0 rootfstype=squashfs rootwait"
 CONFIG_ADDMISC="setenv bootargs ${bootargs} earlycon=lantiq,mmio32,0xe0a00000 console=ttyLTQ0,115200n8r ethaddr=${ethaddr} maxcpus=4 mem=2048M memmap=31M$1M,0x${filesystem_size}$0x${rootfs_loadaddr} initcall_debug=0 loglevel=${kernel_loglvl} intel_pstate=active intel_idle.max_cstate=2 max_cpufreq=${max_cpu_freq} init_cstate_margin=1 init_pstate_threshold=20 rootfs_startaddr=0x${rootfs_loadaddr} rootfs_endaddr=0x${rootfs_loadaddr_end} epu_table_ver=${epu_table_ver} pci=pcie_bus_perf ${custom}"
 CONFIG_RESET_UBOOT_CONFIG="mmc dev 0 0; mw.l ${loadaddr} 0x0 0x20; mmc write ${loadaddr} ${env_a_block_start} 0x10; mmc write ${loadaddr} ${env_b_block_start} 0x10"
-CONFIG_UPGRADE_FS_INIT="tftpboot ${loadaddr} ${tftppath}${filesystem_image} && mmc erase ${extended_boot_a_block_start} ${extended_boot_a_block_size} && mmc erase ${extended_boot_b_block_start} ${extended_boot_b_block_size} && mmc dev 0 0 && mmc write ${loadaddr} ${extended_boot_a_block_start} ${extended_boot_a_block_size} && mmc write ${loadaddr} ${extended_boot_b_block_start} ${extended_boot_b_block_size}"
-CONFIG_UPDATE_UBOOT="tftp ${loadaddr} ${tftppath}${u-boot}; if test $? -eq 0; then mw.l 0x8000 0x56190527 && cmp.l ${loadaddr} 0x8000 1; if test $? -eq 1; then echo \"Mkimage not found\"; mmc dev 0 1; mmc write ${loadaddr} 0x0 ${uboot_a_block_size}; mmc dev 0 2; mmc write ${loadaddr} 0x0 ${uboot_b_block_size}; else setenv select_partition primary; upgrade ${loadaddr} ${filesize}; fi; else echo \"TFTP failed - no upgrade performed\"; fi;"
+CONFIG_UPGRADE_FS_INIT="tftpboot ${loadaddr} ${tftppath}${filesystem_image} && mmc erase ${kernel-active_block_start} ${kernel-active_block_size} && mmc erase ${kernel-inactive_block_start} ${kernel-inactive_block_size} && mmc dev 0 0 && mmc write ${loadaddr} ${kernel-active_block_start} ${kernel-active_block_size} && mmc write ${loadaddr} ${kernel-inactive_block_start} ${kernel-inactive_block_size}"
+CONFIG_UPDATE_UBOOT="tftp ${loadaddr} ${tftppath}${u-boot}; if test $? -eq 0; then mw.l 0x8000 0x56190527 && cmp.l ${loadaddr} 0x8000 1; if test $? -eq 1; then echo \"Mkimage not found\"; mmc dev 0 1; mmc write ${loadaddr} 0x0 ${uboot-active_block_size}; mmc dev 0 2; mmc write ${loadaddr} 0x0 ${uboot-inactive_block_size}; else setenv select_partition primary; upgrade ${loadaddr} ${filesize}; fi; else echo \"TFTP failed - no upgrade performed\"; fi;"
 CONFIG_UPDATE_RBE="tftp ${loadaddr} ${tftppath}${rbe} && setenv select_partition primary; upgrade ${loadaddr} ${filesize}"
 CONFIG_UPDATE_BOOTLOADER="tftp ${loadaddr} ${tftppath}${bootloader}; setenv select_partition primary; upgrade ${loadaddr} ${filesize}"
 CONFIG_UPDATE_FULLIMAGE="tftp ${loadaddr} ${tftppath}${fullimage} && cp.b ${loadaddr} 0x40000000 ${filesize} && mmc dev 0 0 && setenv select_partition primary && upgrade ${loadaddr} ${filesize} && setenv select_partition secondary && upgrade 0x40000000 ${filesize}"
@@ -82,15 +82,19 @@ CONFIG_TEP_FIRMWARE="tep_fw.bin"
 CONFIG_UPDATE_TEP_FIRMWARE="tftpboot ${loadaddr} ${tftppath}${tep_firmware} && setenv select_partition primary; upgrade ${loadaddr} ${filesize} ${tep_firmware}"
 CONFIG_CHECK_IMAGE="echo check image"
 CONFIG_BOOTFILE="/openwrt-intel_x86-lgm-CBSP_B0-kernel.bin"
-CONFIG_EXTRA_ENV_DATA="load_firmwares=run flashargs && run addmisc; mmc dev 0 0; setenv select_partition primary; load mmc 0#${fs_part_a} ${kernel_loadaddr} ${bootfile} && load mmc 0#${fs_part_a} ${rootfs_loadaddr} ${rootfs} && mmc read ${dtb_loadaddr} ${dtb_a_block_start} ${dtb_a_block_size}\0commit_image=mmc dev 0 0; load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\" && mmc dev 0 1 && setenv select_partition secondary && upgrade \"${loadaddr}\" \"${filesize}\" && setenv udt_status 6; saveenv;\0kernel_loglvl=4\0udt_status=0\0udt_file=0\0udt_num=0\0udt_file_1=\"${dtb}\"\0udt_loc=${dtb_vol}\0upgrade_vol=upgrade\0update_bootloader=tftp ${loadaddr} ${tftppath}${bootloader} && setenv select_partition primary && upgrade ${loadaddr} ${filesize} && setenv select_partition secondary && upgrade ${loadaddr} ${filesize}\0set_cma_size=fdt addr ${dtb_loadaddr} ${dtb_a_block_size} && fdt get value cma_size /reserved-memory/linux,cma size; fdt get value cma_alignment /reserved-memory/linux,cma alignment; setexpr cma_start ${rootfs_loadaddr} - ${cma_size}; setenv bootargs ${bootargs} cma=${cma_size}@0x${cma_start}; run cma_check\0update_bootargs=setexpr md_ro_end ${md_ro_end} - 1; setenv bootargs ${bootargs} kernel_startaddr=0x${md_ro_start} kernel_endaddr=0x${md_ro_end}\0cpu_freq=2028000\0led_auth_success=led led1 on\0led_kern_start=led led3 blink 4\0led_inv_img=led led_green off; led led_blue off; led led_red on\0auth_rootfs=auth 5 ${loadaddr} ${rootfs_a_filesize}; if test $? -ne 0; then led led1 off; led led2 blink 4 && exit 1; else exit 0; fi\0auth_dtb=auth 4 ${dtb_loadaddr} ${dtb_a_block_size}; if test $? -ne 0; then led led1 off; led led2 blink 4 && exit 1; else exit 0; fi\0auth_kernel=auth 4 0x8200040 ${kernel_a_filesize}; if test $? -ne 0; then led led1 off; led led2 blink 4 && exit 1; else exit 0; fi\0assert_cma_alignment=setexpr result ${rootfs_alignment} % ${cma_alignment}; if test $result -eq 0; then setexpr ret 0; else echo \"CMA size is not a multiple or larger than RootFS size\"; setexpr ret 1; fi;\0assert_cma_size_align=setexpr result ${cma_size} % ${cma_alignment}; if test $result -eq 0; then setexpr ret 0; else echo \"CMA size not aligned, pls check DTS\"; setexpr ret 1; fi;\0cma_check=run assert_cma_size_align; if test $ret > 0; then false; else run assert_cma_alignment; if test $ret > 0; then false; else true; fi; fi;\0copybankA2B=mmc dev 0 0; setenv select_partition primary; load mmc 0#${fs_part_a} ${kernel_loadaddr} ${bootfile} && setenv select_partition secondary; upgrade \"${loadaddr}\" \"${filesize}\" && setenv select_partition primary; load mmc 0#${fs_part_a} ${loadaddr} ${rootfs} && setenv select_partition secondary; save mmc 0#${fs_part_b} ${loadaddr} ${rootfs} ${filesize} && setenv select_partition primary; mmc read  ${dtb_loadaddr} ${dtb_a_block_start} ${dtb_a_block_size} && setenv select_partition secondary;mmc write ${dtb_loadaddr}  ${dtb_b_block_start} ${dtb_b_block_size}\0copybankB2A=mmc dev 0 0; setenv select_partition secondary; load mmc 0#${fs_part_b} ${kernel_loadaddr} ${bootfile} && setenv select_partition primary; upgrade \"${loadaddr}\" \"${filesize}\" && setenv select_partition secondary; load mmc 0#${fs_part_b} ${loadaddr} ${rootfs} && setenv select_partition primary ; save mmc 0#${fs_part_a} ${loadaddr} ${rootfs} ${filesize} && setenv select_partition secondary; mmc read ${dtb_loadaddr} ${dtb_b_block_start} ${dtb_b_block_size} && setenv select_partition primary;mmc write ${dtb_loadaddr}  ${dtb_a_block_start} ${dtb_a_block_size}\0upgradeA=setenv img_validA 0; saveenv;ext4load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\"; if test $? -eq 1; then echo \"upgrade file not found\"; setenv udt_status 4; saveenv;fi; if test \"${udt_status}\" -ne 4; then mmc dev 0 0; load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\" && mmc dev 0 0 && setenv select_partition primary && upgrade \"${loadaddr}\" \"${filesize}\";if test $? -eq 0; then setenv img_validA 1; saveenv; fi; fi;\0upgradeB=setenv img_validB 0; saveenv;ext4load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\"; if test $? -eq 1; then echo \"upgrade file not found\"; setenv udt_status 4; saveenv;fi; if test \"${udt_status}\" -ne 4; then mmc dev 0 1; load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\" && mmc dev 0 1 && setenv select_partition secondary && upgrade \"${loadaddr}\" \"${filesize}\" && setenv img_validB 1; saveenv; fi;\0image_type=2\0overwrite_active_bank=0\0img_commit_backup=0\0active_bank=A\0img_activate=NA\0commit_bank=A\0img_versionA=verA\0img_versionB=verB\0img_validA=1\0img_validB=1\0check_upg_req=if test \"${udt_status}\" -eq 1; then if test \"${image_type}\" -eq 0; then if test \"${overwrite_active_bank}\" -eq 1; then if test \"${img_commit_backup}\" -eq 1; then if test \"${active_bank}\" = \"A\"; then run copybankA2B; else run copybankB2A; fi; run upgradeA; fi; else if test \"${active_bank}\" = \"A\"; then run upgradeB; else run upgradeA; fi; setenv udt_status 3; saveenv; fi; elif test \"${image_type}\" -eq 1; then if test \"${img_commit_backup}\" -eq 1; then if test \"${active_bank}\" = \"A\"; then run copybankA2B; else run copybankB2A; fi; fi;  setenv commit_bank A; saveenv;run upgradeA; else run upgradeA; setenv commit_bank A; setenv udt_status 2; saveenv; fi; fi;\0loadbootA=run flashargs && run addmisc; mmc dev 0 0; setenv select_partition primary;load mmc 0#${fs_part_a} ${loadaddr} ${rootfs} && run auth_rootfs && cp.b 0x40000000 ${rootfs_loadaddr} ${filesystem_size} && mmc read ${dtb_loadaddr} ${dtb_a_block_start} ${dtb_a_block_size} && run auth_dtb && run set_cma_size && load mmc 0#${fs_part_a} ${kernel_loadaddr} ${bootfile} && run auth_kernel && parsemd ${kernel_loadaddr} ${kernel_loadaddr} && run update_bootargs && run led_auth_success && icc 1 0x${md_ro_start} 0x${md_ro_end} 0x${rootfs_loadaddr} 0x800 && run led_kern_start && bootm ${kernel_loadaddr} - ${dtb_loadaddr};\0loadbootB=run flashargs && run addmisc; mmc dev 0 0; setenv select_partition secondary;load mmc 0#${fs_part_b} ${loadaddr} ${rootfs} && run auth_rootfs && cp.b 0x40000000 ${rootfs_loadaddr} ${filesystem_size} && mmc read ${dtb_loadaddr} ${dtb_b_block_start} ${dtb_b_block_size} && run auth_dtb && run set_cma_size && load mmc 0#${fs_part_b} ${kernel_loadaddr} ${bootfile} && run auth_kernel && parsemd ${kernel_loadaddr} ${kernel_loadaddr} && run update_bootargs && run led_auth_success && icc 1 0x${md_ro_start} 0x${md_ro_end} 0x${rootfs_loadaddr} 0x800 && run led_kern_start && bootm ${kernel_loadaddr} - ${dtb_loadaddr};\0check_img_activate=if test \"${img_activate}\" != \"NA\"; then if test \"${image_type}\" -eq 0; then if test \"${img_activate}\" = \"A\"; then setenv active_bank A; setenv img_activate NA; saveenv; run loadbootA; else setenv active_bank B; setenv img_activate NA; saveenv; run loadbootB; fi; else run loadbootA; fi; setenv img_activate NA; saveenv; elif test \"${commit_bank}\" != \"${active_bank}\"; then if test \"${image_type}\" -eq 0; then if test \"${commit_bank}\" = \"A\"; then setenv active_bank A; saveenv; run loadbootA; else setenv active_bank B; saveenv; run loadbootB; fi; else setenv commit_bank A; saveenv; run loadbootA; fi; else if test \"${commit_bank}\" = \"A\"; then echo booting bankA; run loadbootA; else echo booting bankB; run loadbootB; fi; fi;\0check_commit_req=if test \"${udt_status}\" -eq 5; then if test \"${image_type}\" -eq 0; then if test \"${overwrite_active_bank}\" -eq 1; then setenv img_commit_backup 1; saveenv; fi; elif test \"${image_type}\" -eq 1; then setenv img_commit_backup 1; saveenv; else run copybankA2B; setenv udt_status 6; saveenv; fi; fi;\0kernel_bank=extended_boot_a\0rootfs_bank=extended_boot_a\0active_bank=A\0check_upgrade=if test ${early_boot} = \"invalid\";then run recover_boot;else if test ${late_boot} = \"invalid\";then run recover_boot;else run check_boot_retries;fi;fi;\0check_boot_retries=if test ${udt_status} -eq 11;then if test ${recovery_image} -eq 1;then setenv recovery_image 0; run recover_boot;else echo \"bootcount OK\"; fi;fi;\0set_dtb_bank=if test ${active_bank} = \"A\"; then setenv dtb_bank ${dtb_a_block_start}; setenv dtb_bank_size ${dtb_a_block_size}; else setenv dtb_bank ${dtb_b_block_start}; setenv dtb_bank_size ${dtb_b_block_size}; fi\0check_active_bank=if test ${active_bank} = \"A\"; then if test ${rootfs_bank} = \"extended_boot_b\"; then run switch_to_primary; fi; fi; if test ${active_bank} = \"B\"; then if test ${rootfs_bank} = \"extended_boot_a\"; then run switch_to_secondary; fi; fi;\0last_upg_status=NA\0last_upg_time=NA\0"
+CONFIG_EXTRA_ENV_DATA="load_firmwares=run flashargs && run addmisc; mmc dev 0 0; setenv select_partition primary; load mmc 0#${fs_part_a} ${kernel_loadaddr} ${bootfile} && load mmc 0#${fs_part_a} ${rootfs_loadaddr} ${rootfs} && mmc read ${dtb_loadaddr} ${dtb_a_block_start} ${dtb_a_block_size}\0commit_image=mmc dev 0 0; load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\" && mmc dev 0 1 && setenv select_partition secondary && upgrade \"${loadaddr}\" \"${filesize}\" && setenv udt_status 6; saveenv;\0kernel_loglvl=4\0udt_status=0\0udt_file=0\0udt_num=0\0udt_file_1=\"${dtb}\"\0udt_loc=${dtb_vol}\0upgrade_vol=upgrade\0update_bootloader=tftp ${loadaddr} ${tftppath}${bootloader} && setenv select_partition primary && upgrade ${loadaddr} ${filesize} && setenv select_partition secondary && upgrade ${loadaddr} ${filesize}\0update_bootargs=setexpr md_ro_end ${md_ro_end} - 1; setenv bootargs ${bootargs} kernel_startaddr=0x${md_ro_start} kernel_endaddr=0x${md_ro_end}\0cpu_freq=2028000\0led_auth_success=led led1 on\0led_kern_start=led led3 blink 4\0led_inv_img=led led_green off; led led_blue off; led led_red on\0auth_rootfs=auth 5 ${loadaddr} ${rootfs_a_filesize}; if test $? -ne 0; then led led1 off; led led2 blink 4 && exit 1; else exit 0; fi\0auth_dtb=auth 4 ${dtb_loadaddr} ${dtb_a_block_size}; if test $? -ne 0; then led led1 off; led led2 blink 4 && exit 1; else exit 0; fi\0auth_kernel=auth 4 0x8200040 ${kernel_a_filesize}; if test $? -ne 0; then led led1 off; led led2 blink 4 && exit 1; else exit 0; fi\0copybankA2B=mmc dev 0 0; setenv select_partition primary; load mmc 0#${fs_part_a} ${kernel_loadaddr} ${bootfile} && setenv select_partition secondary; upgrade \"${loadaddr}\" \"${filesize}\" && setenv select_partition primary; load mmc 0#${fs_part_a} ${loadaddr} ${rootfs} && setenv select_partition secondary; save mmc 0#${fs_part_b} ${loadaddr} ${rootfs} ${filesize} && setenv select_partition primary; mmc read  ${dtb_loadaddr} ${dtb_a_block_start} ${dtb_a_block_size} && setenv select_partition secondary;mmc write ${dtb_loadaddr}  ${dtb_b_block_start} ${dtb_b_block_size}\0copybankB2A=mmc dev 0 0; setenv select_partition secondary; load mmc 0#${fs_part_b} ${kernel_loadaddr} ${bootfile} && setenv select_partition primary; upgrade \"${loadaddr}\" \"${filesize}\" && setenv select_partition secondary; load mmc 0#${fs_part_b} ${loadaddr} ${rootfs} && setenv select_partition primary ; save mmc 0#${fs_part_a} ${loadaddr} ${rootfs} ${filesize} && setenv select_partition secondary; mmc read ${dtb_loadaddr} ${dtb_b_block_start} ${dtb_b_block_size} && setenv select_partition primary;mmc write ${dtb_loadaddr}  ${dtb_a_block_start} ${dtb_a_block_size}\0upgradeA=setenv img_validA 0; saveenv;ext4load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\"; if test $? -eq 1; then echo \"upgrade file not found\"; setenv udt_status 4; saveenv;fi; if test \"${udt_status}\" -ne 4; then mmc dev 0 0; load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\" && mmc dev 0 0 && setenv select_partition primary && upgrade \"${loadaddr}\" \"${filesize}\";if test $? -eq 0; then setenv img_validA 1; saveenv; fi; fi;\0upgradeB=setenv img_validB 0; saveenv;ext4load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\"; if test $? -eq 1; then echo \"upgrade file not found\"; setenv udt_status 4; saveenv;fi; if test \"${udt_status}\" -ne 4; then mmc dev 0 1; load mmc 0#${upgrade_part} 0x8200000 \"${udt_file}\" && mmc dev 0 1 && setenv select_partition secondary && upgrade \"${loadaddr}\" \"${filesize}\" && setenv img_validB 1; saveenv; fi;\0image_type=2\0overwrite_active_bank=0\0img_commit_backup=0\0active_bank=A\0img_activate=NA\0commit_bank=A\0img_versionA=verA\0img_versionB=verB\0img_validA=1\0img_validB=1\0check_upg_req=if test \"${udt_status}\" -eq 1; then if test \"${image_type}\" -eq 0; then if test \"${overwrite_active_bank}\" -eq 1; then if test \"${img_commit_backup}\" -eq 1; then if test \"${active_bank}\" = \"A\"; then run copybankA2B; else run copybankB2A; fi; run upgradeA; fi; else if test \"${active_bank}\" = \"A\"; then run upgradeB; else run upgradeA; fi; setenv udt_status 3; saveenv; fi; elif test \"${image_type}\" -eq 1; then if test \"${img_commit_backup}\" -eq 1; then if test \"${active_bank}\" = \"A\"; then run copybankA2B; else run copybankB2A; fi; fi;  setenv commit_bank A; saveenv;run upgradeA; else run upgradeA; setenv commit_bank A; setenv udt_status 2; saveenv; fi; fi;\0loadbootA=run flashargs && run addmisc; mmc dev 0 0; setenv select_partition primary;load mmc 0#${fs_part_a} ${loadaddr} ${rootfs} && run auth_rootfs && cp.b 0x40000000 ${rootfs_loadaddr} ${filesystem_size} && mmc read ${dtb_loadaddr} ${dtb_a_block_start} ${dtb_a_block_size} && run auth_dtb && load mmc 0#${fs_part_a} ${kernel_loadaddr} ${bootfile} && run auth_kernel && parsemd ${kernel_loadaddr} ${kernel_loadaddr} && run update_bootargs && run led_auth_success && run led_kern_start && run formdtbparam && bootm ${kernel_loadaddr} - ${dtbparams};\0loadbootB=run flashargs && run addmisc; mmc dev 0 0; setenv select_partition secondary;load mmc 0#${fs_part_b} ${loadaddr} ${rootfs} && run auth_rootfs && cp.b 0x40000000 ${rootfs_loadaddr} ${filesystem_size} && mmc read ${dtb_loadaddr} ${dtb_b_block_start} ${dtb_b_block_size} && run auth_dtb && load mmc 0#${fs_part_b} ${kernel_loadaddr} ${bootfile} && run auth_kernel && parsemd ${kernel_loadaddr} ${kernel_loadaddr} && run update_bootargs && run led_auth_success && run led_kern_start && run formdtbparam && bootm ${kernel_loadaddr} - ${dtbparams};\0check_img_activate=if test \"${img_activate}\" != \"NA\"; then if test \"${image_type}\" -eq 0; then if test \"${img_activate}\" = \"A\"; then setenv active_bank A; setenv img_activate NA; saveenv; run loadbootA; else setenv active_bank B; setenv img_activate NA; saveenv; run loadbootB; fi; else run loadbootA; fi; setenv img_activate NA; saveenv; elif test \"${commit_bank}\" != \"${active_bank}\"; then if test \"${image_type}\" -eq 0; then if test \"${commit_bank}\" = \"A\"; then setenv active_bank A; saveenv; run loadbootA; else setenv active_bank B; saveenv; run loadbootB; fi; else setenv commit_bank A; saveenv; run loadbootA; fi; else if test \"${commit_bank}\" = \"A\"; then echo booting bankA; run loadbootA; else echo booting bankB; run loadbootB; fi; fi;\0check_commit_req=if test \"${udt_status}\" -eq 5; then if test \"${image_type}\" -eq 0; then if test \"${overwrite_active_bank}\" -eq 1; then setenv img_commit_backup 1; saveenv; fi; elif test \"${image_type}\" -eq 1; then setenv img_commit_backup 1; saveenv; else run copybankA2B; setenv udt_status 6; saveenv; fi; fi;\0kernel_bank=kernel-active\0rootfs_bank=kernel-active\0active_bank=A\0check_upgrade=if test ${early_boot} = \"invalid\";then run recover_boot;else if test ${late_boot} = \"invalid\";then run recover_boot;else run check_boot_retries;fi;fi;\0check_boot_retries=if test ${udt_status} -eq 11;then if test ${recovery_image} -eq 1;then setenv recovery_image 0; run recover_boot;else echo \"bootcount OK\"; fi;fi;\0set_dtb_bank=if test ${active_bank} = \"A\"; then setenv dtb_bank ${dtb_a_block_start}; setenv dtb_bank_size ${dtb_a_block_size}; else setenv dtb_bank ${dtb_b_block_start}; setenv dtb_bank_size ${dtb_b_block_size}; fi\0check_active_bank=if test ${active_bank} = \"A\"; then if test ${rootfs_bank} = \"kernel-inactive\"; then run switch_to_primary; fi; fi; if test ${active_bank} = \"B\"; then if test ${rootfs_bank} = \"kernel-active\"; then run switch_to_secondary; fi; fi;\0last_upg_status=NA\0last_upg_time=NA\0wantype=eth\0formdtbparam=if test \"${wantype}\" = \"pon\"; then setenv dtbparams ${dtb_loadaddr}#basedtb#pon; else setenv dtbparams ${dtb_loadaddr}#basedtb; fi;\0read_dtb=load mmc 0#${kernel_bank} ${loadaddr} ${bootfile} && fdt addr ${loadaddr} && fdt get addr dtbaddr /images/device-tree data && fdt get size dtbsize /images/device-tree data && cp.b ${dtbaddr} ${dtb_loadaddr} ${dtbsize}\0read_kernel=load mmc 0#${kernel_bank} ${kernel_loadaddr} ${bootfile} && fdt addr ${loadaddr} && fdt get addr kerneladdr /images/kernel data && fdt get size kernel_filesize /images/kernel data && cp.b ${kerneladdr} ${kernel_loadaddr} ${kernel_filesize}\0read_rootfs=load mmc 0#${rootfs_bank} ${loadaddr} ${rootfs} && fdt addr ${loadaddr} && fdt get addr rootfsaddr /images/filesystem data && fdt get size rootfs_filesize /images/filesystem data\0"
 CONFIG_ROOTFS_A_SIZE=0x4000000
 CONFIG_ROOTFS_B_SIZE=0x4000000
-CONFIG_FILESYSTEM_PART_A="extended_boot_a"
-CONFIG_FILESYSTEM_PART_B="extended_boot_b"
+CONFIG_FILESYSTEM_PART_A="kernel-active"
+CONFIG_FILESYSTEM_PART_B="kernel-inactive"
+CONFIG_UBOOT_PART_A="u-boot-active"
+CONFIG_UBOOT_PART_B="u-boot-inactive"
+CONFIG_TEP_PART_A="tep-active"
+CONFIG_TEP_PART_B="tep-inactive"
 CONFIG_UPGRADE_PART="upgrade_partition"
 CONFIG_FILESYSTEM_IMG="ext4.fs"
-CONFIG_TOTAL_GPT_PARTITION=18
-CONFIG_LGM_PART_LIST="name=uboot_a,start=512k,size=1M;name=uboot_b,size=1M;name=tep_firmware_a,size=2M;name=tep_firmware_b,size=2M;name=dtb_a,size=512k;name=dtb_b,size=512k;name=env_a,size=512k;name=env_b,size=512k;name=mfgdata,start=9M,size=1M;name=extended_boot_a,start=10M,size=111M;name=extended_boot_b,size=111M;name=securestore_a,start=233M,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=upgrade_partition,size=128M;name=rootfs_data,size=32M;name=rootfs_data_b,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;"
+CONFIG_TOTAL_GPT_PARTITION=16
+CONFIG_LGM_PART_LIST="name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-active,size=1M;name=u-boot-inactive,size=1M;name=kernel-active,size=112M;name=kernel-inactive,size=112M;name=mfgdata,size=2M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;"
 CONFIG_NET=y
 CONFIG_CMD_NET=y
 CONFIG_CMD_PING=y
@@ -156,6 +160,8 @@ CONFIG_PLATFORM_ELFENTRY="_start"
 CONFIG_STACK_SIZE=0x2000000
 CONFIG_SYS_SRAM_BASE=0x0
 CONFIG_SYS_SRAM_SIZE=0x0
+CONFIG_FIT=y
+CONFIG_MXL_SPL_FIT=y
 CONFIG_LEGACY_IMAGE_FORMAT=y
 CONFIG_SYS_EXTRA_OPTIONS=""
 CONFIG_HAVE_SYS_TEXT_BASE=y
@@ -186,7 +192,6 @@ CONFIG_HUSH_PARSER=y
 CONFIG_AUTO_COMPLETE=y
 CONFIG_SYS_LONGHELP=y
 CONFIG_SYS_PROMPT="=> "
-CONFIG_SYS_XTRACE=y
 CONFIG_CMD_BOOTM=y
 CONFIG_CMD_LOADB=y
 CONFIG_RECOVER_PRIMARY_IMG="run overwrite_new_img; run reset_uboot_config; reset"
@@ -198,9 +203,9 @@ CONFIG_BOOTM_LINUX=y
 CONFIG_CMD_IMI=y
 # CONFIG_CMD_XIMG is not set
 CONFIG_CMD_FDT=y
+CONFIG_CMD_FIT_LOAD=y
 CONFIG_CMD_GO=y
 CONFIG_CMD_RUN=y
-CONFIG_CMD_EDITENV=y
 CONFIG_CMD_SAVEENV=y
 CONFIG_CMD_CRC32=y
 CONFIG_CMD_MEMORY=y
@@ -211,7 +216,7 @@ CONFIG_CMD_MMC=y
 # CONFIG_CMD_PCI is not set
 CONFIG_CMD_GPT=y
 CONFIG_RANDOM_UUID=y
-CONFIG_CMD_GPT_RENAME=y
+# CONFIG_CMD_GPT_RENAME is not set
 CONFIG_CMD_ECHO=y
 CONFIG_CMD_ITEST=y
 CONFIG_CMD_SOURCE=y
@@ -220,6 +225,7 @@ CONFIG_CMD_CACHE=y
 CONFIG_CMD_SLEEP=y
 CONFIG_CMD_AUTH=y
 CONFIG_CMD_ICC=y
+CONFIG_CMD_ICC_OVERLAY=y
 CONFIG_CMD_IA_SWITCH=y
 CONFIG_CMD_WATCHDOG=y
 CONFIG_CMD_EXT4=y
@@ -243,8 +249,8 @@ CONFIG_ENV_SUPPORT=y
 CONFIG_SAVEENV=y
 CONFIG_ENV_IS_IN_MMC=y
 CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
-CONFIG_ENV_OFFSET=0x780000
-CONFIG_ENV_OFFSET_REDUND=0x800000
+CONFIG_ENV_OFFSET=0x480000
+CONFIG_ENV_OFFSET_REDUND=0x500000
 CONFIG_DM=y
 CONFIG_SPL_DM=y
 CONFIG_DM_WARN=y
@@ -344,7 +350,8 @@ CONFIG_LIB_RAND=y
 # CONFIG_X86_PCH9 is not set
 # CONFIG_IRQ is not set
 # CONFIG_CMD_ELF is not set
-# CONFIG_DM_GPIO is not set
+CONFIG_DM_GPIO=y
+# CONFIG_SPL_DM_GPIO is not set
 # CONFIG_SPL_SPI_FLASH_SUPPORT is not set
 # CONFIG_SPL_SPI is not set
 CONFIG_SPL_PAYLOAD="u-boot-emmc.bin"
@@ -352,6 +359,16 @@ CONFIG_BUILD_TARGET="u-boot-plus-spl-emmc.bin"
 # CONFIG_SPL_FRAMEWORK is not set
 # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
 # CONFIG_SPL_LEGACY_IMAGE_SUPPORT is not set
+# CONFIG_CMD_BDI is not set
+# CONFIG_CMD_CONSOLE is not set
+# CONFIG_BOOTM_NETBSD is not set
+# CONFIG_CMD_EDITENV is not set
+# CONFIG_CMD_IMPORTENV is not set
+# CONFIG_CMD_EXPORTENV is not set
+# CONFIG_CMD_BOOTP is not set
+# CONFIG_CMD_NFS is not set
+# CONFIG_CMD_BLOCK_CACHE is not set
+# CONFIG_SYS_XTRACE is not set
 
 #
 # Hashing Support
@@ -366,6 +383,7 @@ CONFIG_GZIP=y
 CONFIG_ZLIB=y
 CONFIG_OF_LIBFDT=y
 CONFIG_OF_LIBFDT_ASSUME_MASK=0
+CONFIG_OF_LIBFDT_OVERLAY=y
 CONFIG_SPL_OF_LIBFDT=y
 CONFIG_SPL_OF_LIBFDT_ASSUME_MASK=0xff
 
@@ -434,9 +452,9 @@ CONFIG_LED_STATUS_STATE=1
 CONFIG_LED_STATUS_FREQ=4
 CONFIG_LED_STATUS_BOOT_ENABLE=y
 CONFIG_LED_STATUS_BOOT=0
-CONFIG_SWITCH_PRIMARY="setenv kernel_bank extended_boot_a; setenv rootfs_bank extended_boot_a; setenv dtb_bank ${dtb_a_block_start}; setenv dtb_bank_size ${dtb_a_block_size}; setenv active_bank A; echo \"Switched to bank ${active_bank}\"; saveenv"
-CONFIG_SWITCH_SECONDARY="setenv kernel_bank extended_boot_b; setenv rootfs_bank extended_boot_b; setenv dtb_bank ${dtb_b_block_start}; setenv dtb_bank_size ${dtb_b_block_size}; setenv active_bank B; echo \"Switched to bank ${active_bank}\"; saveenv"
+CONFIG_SWITCH_PRIMARY="setenv kernel_bank kernel-active; setenv rootfs_bank kernel-active; setenv active_bank A; echo \"Switched to bank ${active_bank}\"; saveenv"
+CONFIG_SWITCH_SECONDARY="setenv kernel_bank kernel-inactive; setenv rootfs_bank kernel-inactive; setenv active_bank B; echo \"Switched to bank ${active_bank}\"; saveenv"
 CONFIG_SWITCH_PARTITION="if test ${active_bank} = \"A\"; then run switch_to_secondary; else run switch_to_primary; fi;"
-CONFIG_RECOVER_BOOT_IMG="mmc dev 0 2 && mmc read ${loadaddr} 0 0x800 && mmc dev 0 1 && mmc write ${loadaddr} 0 0x800; mmc dev 0 0 && mmc read ${loadaddr} ${tep_b_block_start} ${tep_b_block_size} && mmc write ${loadaddr} ${tep_a_block_start} ${tep_a_block_size} && mmc read ${loadaddr} ${uboot_b_block_start} ${uboot_b_block_size} && mmc write ${loadaddr} ${uboot_a_block_start} ${uboot_a_block_size} && setenv early_boot 'valid' && saveenv; if test $? -eq 0; then echo \"Early boot Recovery success!\"; else echo \"Failed to recover early boot\"; fi;"
+CONFIG_RECOVER_BOOT_IMG="mmc dev 0 2 && mmc read ${loadaddr} 0 0x800 && mmc dev 0 1 && mmc write ${loadaddr} 0 0x800; mmc dev 0 0 && mmc read ${loadaddr} ${tep_b_block_start} ${tep_b_block_size} && mmc write ${loadaddr} ${tep_a_block_start} ${tep_a_block_size} && mmc read ${loadaddr} ${uboot-inactive_block_start} ${uboot-inactive_block_size} && mmc write ${loadaddr} ${uboot-active_block_start} ${uboot-active_block_size} && setenv early_boot 'valid' && saveenv; if test $? -eq 0; then echo \"Early boot Recovery success!\"; else echo \"Failed to recover early boot\"; fi;"
 CONFIG_RECOVER_BOOT_ALL_IMG="if test ${udt_status} -eq 10;then reset;else if test ${early_boot} != \"valid\";then run recover_early_boot;fi;if test ${late_boot} != \"valid\";then run switch_partition;setenv late_boot 'valid';fi;setenv udt_status 10;saveenv;reset;fi;"
-CONFIG_FLASH_FLASH="run check_active_bank; run flashargs; run addmisc; mmc dev 0 0; load mmc 0#${rootfs_bank} ${loadaddr} ${rootfs} && auth 5 ${loadaddr} ${rootfs_a_filesize} && cp.b 0x40000000 ${rootfs_loadaddr} ${filesystem_size} && mmc read ${dtb_loadaddr} ${dtb_bank} ${dtb_bank_size} && auth 4 ${dtb_loadaddr} ${dtb_bank_size} && run set_cma_size && load mmc 0#${kernel_bank} ${kernel_loadaddr} ${bootfile} && auth 4 0x8200040 ${kernel_a_filesize} && parsemd ${kernel_loadaddr} ${kernel_loadaddr} && run update_bootargs && icc 1 0x${md_ro_start} 0x${md_ro_end} 0x${rootfs_loadaddr} 0x800 && if test ${kernel_bank} = \"extended_boot_a\"; then echo \"Late Boot from Bank A\"; else echo \"Late Boot from Bank B\"; fi; bootm ${kernel_loadaddr} - ${dtb_loadaddr};reset"
+CONFIG_FLASH_FLASH="run check_active_bank; run flashargs; run addmisc; mmc dev 0 0; run read_rootfs && auth 5 ${rootfsaddr} ${rootfs_filesize} && cp.b 0x40000000 ${rootfs_loadaddr} ${filesystem_size} && run read_dtb && auth 4 ${dtb_loadaddr} ${dtbsize} && run read_kernel && auth 4 ${kernel_loadaddr} ${kernel_filesize} && parsemd ${kernel_loadaddr} ${kernel_loadaddr} && run update_bootargs && saveenv && if test ${kernel_bank} = \"kernel-active\"; then echo \"Late Boot from Bank A\"; else echo \"Late Boot from Bank B\"; fi; run formdtbparam && bootm ${kernel_loadaddr} - ${dtbparams};reset"

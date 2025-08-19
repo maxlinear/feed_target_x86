@@ -40,7 +40,7 @@ fw_env_config() {
 			[ -b /dev/$dev_name ] && {
 				env_size=$(printf "0x%X" `expr $(cat "$dir/$dev_name/size" | cut -d= -f1) \* 512`)
 			}
-			[ ! -b /dev/$dev_name -o $env_size -eq 0 ] && {
+			[ ! -b /dev/$dev_name -o $((env_size)) -eq 0 ] && {
 				echo "Error: wrong device $dev_name or env size $env_size" > /dev/console
 				continue;
 			}

@@ -92,9 +92,9 @@ mount_root_lgm() {
 	}
 	
 	[ ! -z "$securestore_a_partname" ] && [ -e "/dev/$securestore_a_partname" ] && {
-		if [ ! -d "/cfg" ]; then
-			mkdir /cfg
-			chmod 600 /cfg
+		if [ ! -d "/tmp/securestore" ]; then
+			mkdir /tmp/securestore
+			chmod 600 /tmp/securestore
 		fi
 		
 		e2fsck -p /dev/$securestore_a_partname > /dev/null
@@ -105,12 +105,10 @@ mount_root_lgm() {
 			e2fsck -y /dev/$securestore_a_partname > /dev/null
 		fi
 		
-		mount -t ext4  /dev/$securestore_a_partname /cfg || {
+		mount -t ext4  /dev/$securestore_a_partname /tmp/securestore || {
 			mkfs.ext4 /dev/$securestore_a_partname
-			mount -t ext4 /dev/$securestore_a_partname /cfg
+			mount -t ext4 /dev/$securestore_a_partname /tmp/securestore
 		}
-
-		ln -s /cfg /tmp/securestore
 
 		[ -d /tmp/securestore -a -e /securestore ] || {
 			ln -s /tmp/securestore /securestore

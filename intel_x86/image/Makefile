@@ -122,39 +122,6 @@ endef
 
 endif
 
-define Image/SignImage
-	$(call BuildImage)
-ifeq ($(CONFIG_INTEL_X86_EXTERNAL_IMAGE_SIGNING),y)
-	cp -f fullimg_dtb.json $(BIN_DIR)/non_signed_image
-	$(STAGING_DIR_HOST)/bin/signingutil sign $(BIN_DIR)/non_signed_image $(CONFIG_INTEL_X86_SIGNING_SER_USER) \
-		$(CONFIG_INTEL_X86_SIGNING_SER_PASS) $(BIN_DIR)/non_signed_image/fullimg_dtb.json
-	cp -f $(BIN_DIR)/non_signed_image/*.dtb $(BIN_DIR)/
-	cp -f $(BIN_DIR)/non_signed_image/*.rootfs $(BIN_DIR)/
-	cp -f $(BIN_DIR)/non_signed_image/*kernel.bin $(BIN_DIR)/$(IMG_PREFIX)-*-kernel.bin
-	cp -f $(BIN_DIR)/non_signed_image/*fullimage.img $(BIN_DIR)/
-	if [ -a $(BIN_DIR)/non_signed_image/tep_fw.bin.new.signed ]; then \
-		cp -vf $(BIN_DIR)/non_signed_image/tep_fw.bin.new.signed $(BIN_DIR)/tep_fw.bin; \
-	fi;
-	rm -rf $(BIN_DIR)/uboot-lgp-*/*
-	for f in $(BIN_DIR)/non_signed_image/*/; do \
-		if [ -d $$$$f ]; then \
-			cd $$$$f; \
-			cp -vf u-boot-without-signing.lzimg.new.signed $(BIN_DIR)/$$$$(basename $$$$f)/u-boot-emmc.bin; \
-			cp -vf u-boot-spl-without-signing.img.new.signed $(BIN_DIR)/$$$$(basename $$$$f)/u-boot-spl-emmc.bin; \
-			cp -vf u-boot-mem-without-signing.bin.new.signed.asc $(BIN_DIR)/$$$$(basename $$$$f)/u-boot-recovery.asc; \
-			cp -vf u-boot-mem-without-signing.bin.new.signed $(BIN_DIR)/$$$$(basename $$$$f)/u-boot-recovery.bin; \
-			rm -f u-boot-without-signing.lzimg.new.signed u-boot-spl-without-signing.img.new.signed; \
-			rm -f u-boot-mem-without-signing.bin.new.signed.asc u-boot-mem-without-signing.bin.new.signed; \
-		fi; \
-	done
-	rm -f $(BIN_DIR)/non_signed_image/*fullimage.img
-	rm -f $(BIN_DIR)/non_signed_image/*.dtb
-	rm -f $(BIN_DIR)/non_signed_image/*.rootfs
-	rm -f $(BIN_DIR)/non_signed_image/*kernel.bin
-	rm -f $(BIN_DIR)/non_signed_image/*tep_fw.bin.new.signed
-endif
-endef
-
 include lgm.mk
 
-$(eval $(call Image/SignImage))
+$(eval $(call BuildImage))

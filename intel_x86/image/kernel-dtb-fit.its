@@ -1,11 +1,11 @@
 /*
- * The image source file creates FIT image with MXL URX Linux kernel and Device Tree Blob (DTB)
+ * The image source file creates FIT image with MXL URX Linux kernel and Device Tree Blob.
  */
 
 /dts-v1/;
 
 / {
-	description = "FIT image with MXL URX Linux kernel and DTB";
+	description = "FIT image with MXL URX Linux kernel and device tree";
 
 	images {
 		kernel {

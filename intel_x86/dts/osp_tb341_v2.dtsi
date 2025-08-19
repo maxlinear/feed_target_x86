@@ -46,21 +46,25 @@
 &gphy0 {
 	status = "okay";
 	reg = <0x10>;
+	mxl,usxgmii-reach = <1>; 
 };
 
 &gphy1 {
 	status = "okay";
 	reg = <0x11>;
+	mxl,usxgmii-reach = <1>; 
 };
 
 &gphy2 {
 	status = "okay";
 	reg = <0x12>;
+	mxl,usxgmii-reach = <1>; 
 };
 
 &gphy3 {
 	status = "okay";
 	reg = <0x13>;
+	mxl,usxgmii-reach = <1>; 
 };
 
 /******************************************************************************
