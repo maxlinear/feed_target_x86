@@ -71,8 +71,8 @@
 #define POLICY4_NUM_BUF_MIN 2331
 #define POLICY4_NUM_BUF_MAX 2343
 /* TSO/LRO */
-#define POLICY5_NUM_BUF_MIN 2048
-#define POLICY5_NUM_BUF_MAX 2560
+#define POLICY5_NUM_BUF_MIN 1856
+#define POLICY5_NUM_BUF_MAX 6303
 /* WAV614 - RX */
 #define POLICY6_NUM_BUF_MIN 5000
 #define POLICY6_NUM_BUF_MAX 6250
@@ -115,9 +115,6 @@
 #define POLICY20_NUM_BUF_MAX 3200
 #define POLICY21_NUM_BUF_MIN 576
 #define POLICY21_NUM_BUF_MAX 576
-/* LRO uC */
-#define POLICY31_NUM_BUF_MIN 1856
-#define POLICY31_NUM_BUF_MAX 6303
 
 #define ICC_POOL_SIZE 0x4000000
 #define RW_POOL_SIZE 0x2100000
@@ -156,8 +153,8 @@
 #define POLICY4_NUM_BUF_MIN 2331
 #define POLICY4_NUM_BUF_MAX 2343
 /* TSO/LRO */
-#define POLICY5_NUM_BUF_MIN 2048
-#define POLICY5_NUM_BUF_MAX 2560
+#define POLICY5_NUM_BUF_MIN 1856
+#define POLICY5_NUM_BUF_MAX 8643
 /* VRX - RX */
 #define POLICY12_NUM_BUF_MIN 1000
 #define POLICY12_NUM_BUF_MAX 1250
@@ -188,9 +185,6 @@
 /* WAV700 - TX */
 #define POLICY23_NUM_BUF_MIN 80000
 #define POLICY23_NUM_BUF_MAX 86787
-/* LRO uC */
-#define POLICY31_NUM_BUF_MIN 1856
-#define POLICY31_NUM_BUF_MAX 8643
 
 #define ICC_POOL_SIZE 0x4000000
 #define RW_POOL_SIZE 0x2100000
@@ -234,8 +228,8 @@
 #define POLICY4_NUM_BUF_MIN 2331
 #define POLICY4_NUM_BUF_MAX 2343
 /* TSO/LRO */
-#define POLICY5_NUM_BUF_MIN 2048
-#define POLICY5_NUM_BUF_MAX 2560
+#define POLICY5_NUM_BUF_MIN 1856
+#define POLICY5_NUM_BUF_MAX 4353
 /* WAV614 - RX */
 #define POLICY6_NUM_BUF_MIN 2500
 #define POLICY6_NUM_BUF_MAX 3125
@@ -278,9 +272,6 @@
 #define POLICY20_NUM_BUF_MAX 3200
 #define POLICY21_NUM_BUF_MIN 576
 #define POLICY21_NUM_BUF_MAX 576
-/* LRO uC */
-#define POLICY31_NUM_BUF_MIN 1856
-#define POLICY31_NUM_BUF_MAX 4353
 
 #define ICC_POOL_SIZE 0x4000000
 #define RW_POOL_SIZE 0x2100000
@@ -413,9 +404,10 @@
 		/* TOE TX policy */
 		bm_policy@5 {
 			reg = <5>;
-			policy,pool = <3 DP_RES_ID_SYS>;
+			policy,pool = <10 DP_RES_ID_LROUC>,
+				      <3 DP_RES_ID_LROUC>;
 			policy,alloc = <POLICY5_NUM_BUF_MIN POLICY5_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX>;
+			policy,direction = <CQM_RX>;
 		};
 
 		#if defined(CONFIG_WAVE_6X4)
@@ -538,13 +530,6 @@
 			policy,direction = <CQM_TX>;
 		};
 		#endif
-		bm_policy@31 {
-			reg = <31>;
-			policy,pool = <10 DP_RES_ID_LROUC>,
-				      <3 DP_RES_ID_LROUC>;
-			policy,alloc = <POLICY31_NUM_BUF_MIN POLICY31_NUM_BUF_MAX>;
-			policy,direction = <CQM_RX>;
-		};
 	};
 };
 

@@ -93,8 +93,8 @@ CONFIG_TEP_PART_A="tep-active"
 CONFIG_TEP_PART_B="tep-inactive"
 CONFIG_UPGRADE_PART="upgrade_partition"
 CONFIG_FILESYSTEM_IMG="ext4.fs"
-CONFIG_TOTAL_GPT_PARTITION=16
-CONFIG_LGM_PART_LIST="name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-active,size=1M;name=u-boot-inactive,size=1M;name=kernel-active,size=112M;name=kernel-inactive,size=112M;name=mfgdata,size=2M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;"
+CONFIG_TOTAL_GPT_PARTITION=17
+CONFIG_LGM_PART_LIST="name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-active,size=1M;name=u-boot-inactive,size=1M;name=kernel-active,size=112M;name=kernel-inactive,size=112M;name=mfgdata,size=2M;name=config,size=16M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;"
 CONFIG_NET=y
 CONFIG_CMD_NET=y
 CONFIG_CMD_PING=y

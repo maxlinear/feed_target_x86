@@ -1,0 +1,85 @@
+/ {
+	dpm:dpm {
+		dpm_qos:dpm_qos {
+			status = "ok";
+			qos_default:default {
+				status = "ok";
+				category = "default";
+				queue_size = <1024>;
+				wred = <0>;
+				codel = <0>;
+			};
+			qos_default_intermediate:default_inter {
+				status = "ok";
+				category = "default_inter";
+				queue_size = <1024>;
+				wred = <0>;
+				codel = <0>;
+			};
+			cpu_qos_default:cpu {
+				status = "ok";
+				category = "cpu";
+				queue_size = <1024>;
+				wred = <0>;
+				codel = <0>;
+			};
+			eth_lan_qos_default:eth_lan {
+				status = "ok";
+				category = "eth_lan";
+				queue_size = <8192>;
+				wred = <0>;
+				codel = <1>;
+			};
+			eth_wan_qos_default:eth_wan {
+				status = "ok";
+				category = "eth_wan";
+				queue_size = <3072>;
+				wred = <0>;
+				codel = <1>;
+			};
+			wlan_qos_default:wlan {
+				status = "disabled";
+				category = "wlan";
+				queue_size = <1024>;
+				wred = <0>;
+				codel = <0>;
+			};
+			dsl_qos_default:dsl {
+				status = "disabled";
+				category = "dsl";
+				queue_size = <1024>;
+				wred = <0>;
+				codel = <0>;
+			};
+			direct_qos_default:direct {
+				status = "ok";
+				category = "direct";
+				queue_size = <3072>;
+				wred = <0>;
+				codel = <1>;
+			};
+			gpon_qos_default:gpon {
+				status = "ok";
+				category = "gpon";
+				queue_size = <8192>;
+				wred = <0>;
+				codel = <1>;
+			};
+			docsis_qos_default:docsis {
+				status = "disabled";
+				category = "docsis";
+				queue_size = <1024>;
+				wred = <0>;
+				codel = <0>;
+			};
+			vuni_qos_default:vuni {
+				status = "ok";
+				category = "vuni";
+				queue_size = <8192>;
+				wred = <0>;
+				codel = <0>;
+			};
+		};
+	};
+};
+
