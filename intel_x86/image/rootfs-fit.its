@@ -28,6 +28,7 @@
 		rootfs-conf {
 			description = "Mxl URX rootfs";
 			filesystem = "filesystem";
+			version = "UPDK-9.1.100";
 		};
 	};
 };

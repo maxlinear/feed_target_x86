@@ -215,7 +215,10 @@ define Build/fit-kernel-dtb
 
 	#its file update and fit image creation
 	$(eval DTB_BASE_FILE:=$(basename $(notdir $(2))))
+	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
+	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 	sed -e 's@KERNEL@$(IMAGE_KERNEL).fitimage@g' \
+		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
 		-e 's@DTB@$@.dtb@g' kernel-dtb-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb.fit
 endef
@@ -232,7 +235,10 @@ else
 define Build/fit-kernel-dtb
 	gzip -f -9n -c $(KDIR)/vmlinux > $(KDIR)/vmlinux.gz
 	$(eval DTB_BASE_FILE:=$(basename $(notdir $(2))))
+	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
+	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 	sed -e 's@KERNEL@$(KDIR)/vmlinux.gz@g' \
+		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
 		-e 's@DTB@$(2)@g' kernel-dtb-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb.fit
 endef
@@ -246,9 +252,13 @@ endef
 endif
 # generates rootfs in fit format.
 define Build/fit-rootfs
+	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
+	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 	dd if=$@ of=$@.tmp bs=16 conv=sync;
 	mv $@.tmp $@
-	sed -e 's@ROOTFS@$@@g' rootfs-fit.its > $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its
+	sed -e 's@ROOTFS@$@@g' \
+		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+	rootfs-fit.its > $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
 	mkdir -p $(BIN_DIR)/single-images
 	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)_rootfs.fit

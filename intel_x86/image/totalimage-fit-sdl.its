@@ -1,0 +1,61 @@
+/*
+ * The image source file creates FIT image with MXL URX Linux kernel Device Tree FIT and rootfs FIT
+ */
+
+/dts-v1/;
+
+/ {
+	description = "FIT image with MXL URX RBE, u-boot FIT, TEP FIT, Linux kernel-DTB FIT and rootfs FIT";
+
+	images {
+		rbe {
+			description = "MXL URX RBE Image";
+			data = /incbin/("u-boot-spl-emmc.bin");
+			type = "firmware";
+			arch = "x86_64";
+			compression = "none";
+		};
+		uboot {
+			description = "MXL URX UBOOT FIT Image";
+			data = /incbin/("u-boot.itb");
+			type = "firmware";
+			arch = "x86_64";
+			compression = "none";
+		};
+		tep {
+			description = "MXL URX TEP FIT image";
+			data = /incbin/("tep_fw.itb");
+			type = "firmware";
+			arch = "x86_64";
+			compression = "none";
+		};
+		kernel-dtb {
+			description = "MXL URX Linux kernel and DTB FIT Image";
+			data = /incbin/("prplos-intel_x86-lgm-PRPL_MB_URX-641_wav700_kernel_dtb.fit");
+			type = "firmware";
+			arch = "x86_64";
+			os = "linux";
+			compression = "none";
+		};
+		filesystem {
+			description = "MXL URX Rootfs FIT image";
+			data = /incbin/("prplos-intel_x86-lgm-PRPL_MB_URX_rootfs.fit");
+			type = "firmware";
+			arch = "x86_64";
+			compression = "none";
+		};
+	};
+
+	configurations {
+		default = "rbe-uboot-tep-kernel-dtb-rootfs-conf";
+		rbe-uboot-tep-kernel-dtb-rootfs-conf {
+			description = "MXL URX RBE + Ubooot + tep + Linux kernel + DBT + rootfs";
+			rbe = "rbe";
+			uboot = "uboot";
+			tep = "tep";
+			kernel = "kernel-dtb";
+			filesystem = "filesystem";
+		};
+	};
+};
+

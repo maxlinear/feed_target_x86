@@ -45,6 +45,7 @@
 			description = "MXL URX Linux kernel with Device Tree blob";
 			kernel = "kernel";
 			fdt = "device-tree";
+			version = "UPDK-9.1.100";
 		};
 	};
 };
