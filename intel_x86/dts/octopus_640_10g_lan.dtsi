@@ -36,16 +36,6 @@
 	};
 };
 
-/* Put P34x in reset since 10G LAN is in use */
-&gpio2 {
-	p34x_phy_reset {
-		gpio-hog;
-		gpios = <11 GPIO_ACTIVE_HIGH>;
-		output-low;
-		line-name = "p34X_PHY_in_reset";
-	};
-};
-
 /* Select 10GPHY */
 &gpio0 {
 	10GPHY_gpio15 {

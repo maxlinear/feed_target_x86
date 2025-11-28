@@ -81,7 +81,7 @@
 	};
 
 	led10: led10 { /* 2.4GHz */
-		label = "led10:green:2.4G";
+		label = "led10:green:24G";
 		led-gpios = <&ssogpio 10 0>;
 		mxl,led-pin = <10>;
 	};

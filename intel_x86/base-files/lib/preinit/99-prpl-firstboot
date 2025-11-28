@@ -1,0 +1,11 @@
+#!/bin/bash
+
+prpl_firstboot() {
+	os_name=$(grep '^NAME=' /etc/os-release | cut -d'=' -f2- | tr -d '"')
+
+	if [ "$os_name" = "prplOS" ]; then
+		ln -sf /sbin/factoryreset /sbin/firstboot
+	fi
+}
+boot_hook_add preinit_main prpl_firstboot
+

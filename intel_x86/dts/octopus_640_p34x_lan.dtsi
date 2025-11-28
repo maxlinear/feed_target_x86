@@ -13,6 +13,11 @@
 	};
 };
 
+/* Enable P34x */
+&gpio2 {
+	/delete-node/ P34x_reset;
+};
+
 /* P34x */
 &p34x {
 	status = "okay";

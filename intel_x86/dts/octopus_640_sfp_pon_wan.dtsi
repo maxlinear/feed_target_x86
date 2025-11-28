@@ -46,8 +46,8 @@
 
 &ponmbox {
 	status = "okay";
-	/* I2C bus to the optical WAN transceiver */
-	sfp = <&i2c2>;
+	/* Reference to SFP cage for WAN */
+	sfp = <&sfp_wan0>;
 };
 
 &vuni {

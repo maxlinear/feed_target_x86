@@ -33,13 +33,39 @@
 	};
 };
 
-/* 10G LAN in reset */
+/* P34x in reset */
+&gpio2 {
+	P34x_reset: P34x_reset {
+		gpio-hog;
+		gpios = <11 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "P34x reset";
+	};
+};
+
 &ssogpio {
+	/* 10G LAN in reset */
 	LAN_PHY_gpio18: LAN_PHY_gpio18 { /* put 10G PHY out of reset */
 		gpio-hog;
 		gpios = <18 GPIO_ACTIVE_HIGH>;
 		output-low;
 		line-name = "10G_PHY_LAN_enable";
+	};
+
+	/* GPY215 in reset */
+	GPY215_gpio16: GPY215_gpio16 {
+		gpio-hog;
+		gpios = <16 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "GPY215_enable";
+	};
+
+	/* GSW120 in reset */
+	GSW120_gpio17: GSW120_gpio17 {
+		gpio-hog;
+		gpios = <17 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "GSW120_enable";
 	};
 };
 

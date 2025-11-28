@@ -16,4 +16,4 @@
 #include "config_ddr_2gb.dtsi"
 #include "config_subsystem_gw.dtsi"
 #include "config_wave700.dtsi"
-#include "bm_main_pon.dtsi"
+#include "bm_main_eth.dtsi"

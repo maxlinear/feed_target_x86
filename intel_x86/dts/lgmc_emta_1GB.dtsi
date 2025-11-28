@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2023-2024 MaxLinear, Inc.
+ * Copyright (C) 2023-2025 MaxLinear, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License, as published by the Free
@@ -15,29 +15,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
-&reserved_mem {
-	linux,cma {
-		size = <0xDC00000>;
-	};
-};
-
 &cqm_lgm {
 	/delete-node/ mxl,wav-port-resv;
-	cqm,bm_pools {
-		pool@1 {
-			pool,pool-num_buffs = <9984 58688>;
-		};
-		pool@2 {
-			pool,pool-num_buffs = <3008 17984>;
-		};
-		pool@3 {
-			pool,pool-num_buffs = <10240 45888>;
-		};
-		pool@4 {
-			pool,pool-num_buffs = <2432 4096>;
-		};
-	};
 	cqm,bm_policies {
 		/delete-node/ bm_policy@6;
 		/delete-node/ bm_policy@7;
@@ -61,26 +40,4 @@
 		/delete-node/ bm_policy@30;
 	};
 };
-&sys_pool {
-	size = <0x3390000>;
-	perm = <NOC_RD_PERM>;
-};
 
-&cpu_pool {
-	size = <0x3060000>;
-	perm = <NOC_RW_PERM>;
-};
-&rw_pool {
-	size = <0x1470000>;
-	perm = <NOC_RW_PERM>;
-};
-
-&ro_pool {
-	size = <0x600000>;
-	perm = <NOC_RD_PERM>;
-};
-
-&ppv4 {
-	num-sessions = <32768>; /* 32K */
-	dma_nioc_sz =  <0x1368000>; /* 19MB from rw_pool - depend on num-sessions param */
-};

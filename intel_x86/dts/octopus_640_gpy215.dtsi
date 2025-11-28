@@ -6,6 +6,11 @@
  * Copyright (C) 2024 MaxLinear, Inc.
  */
 
+&GPY215_gpio16 {
+	/delete-property/ output-low;
+	output-high;
+};
+
 &lpid_config {
 	mxl,port-mode = <LPID_PORT_MODE0>;
 };

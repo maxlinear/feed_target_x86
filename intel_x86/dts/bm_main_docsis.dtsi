@@ -8,7 +8,7 @@
 
 /*
  * ==========================================================================
- * BM pool/policy configuration V7.05
+ * BM pool/policy configuration V8.05
  * ==========================================================================
  */
 
@@ -47,71 +47,72 @@
  * Cable GW + GW + 2GB DDR + WAVE700
  ***************************************************/
 
-#define POOL0_NUM_BUF 128
-#define POOL1_NUM_BUF 60928
-#define POOL2_NUM_BUF 165696
-#define POOL3_NUM_BUF 320
-#define POOL4_NUM_BUF 1024
-#define POOL5_NUM_BUF 128
-#define POOL6_NUM_BUF 640
-#define POOL7_NUM_BUF 3968
-#define POOL8_NUM_BUF 640
-#define POOL9_NUM_BUF 64
+#define POOL0_NUM_BUF  128
+#define POOL1_NUM_BUF  84544
+#define POOL2_NUM_BUF  120000
+#define POOL3_NUM_BUF  0
+#define POOL4_NUM_BUF  0
+#define POOL5_NUM_BUF  1024
+#define POOL6_NUM_BUF  128
+#define POOL7_NUM_BUF  4160
+#define POOL8_NUM_BUF  0
+#define POOL9_NUM_BUF  0
+#define POOL10_NUM_BUF 640
+#define POOL11_NUM_BUF 64
 
 /* System */
 #define POLICY0_NUM_BUF_MIN 64
-#define POLICY0_NUM_BUF_MAX 1927
-#define POLICY1_NUM_BUF_MIN 64
-#define POLICY1_NUM_BUF_MAX 1799
-#define POLICY2_NUM_BUF_MIN 8245
-#define POLICY2_NUM_BUF_MAX 10307
-#define POLICY3_NUM_BUF_MIN 128
-#define POLICY3_NUM_BUF_MAX 128
+#define POLICY0_NUM_BUF_MAX 32896
+#define POLICY1_NUM_BUF_MIN 8192
+#define POLICY1_NUM_BUF_MAX 32768
+#define POLICY2_NUM_BUF_MIN 2048
+#define POLICY2_NUM_BUF_MAX 10240
 /* TSO/LRO */
-#define POLICY4_NUM_BUF_MIN 2048
-#define POLICY4_NUM_BUF_MAX 2560
+#define POLICY5_NUM_BUF_MIN 1679
+#define POLICY5_NUM_BUF_MAX 3358
 /* Voice */
-#define POLICY16_NUM_BUF_MIN 1024
-#define POLICY16_NUM_BUF_MAX 1024
+#define POLICY17_NUM_BUF_MIN 1024
+#define POLICY17_NUM_BUF_MAX 1024
 /* CPU */
-#define POLICY17_NUM_BUF_MIN 128
-#define POLICY17_NUM_BUF_MAX 128
-#define POLICY18_NUM_BUF_MIN 640
-#define POLICY18_NUM_BUF_MAX 640
-#define POLICY19_NUM_BUF_MIN 3968
-#define POLICY19_NUM_BUF_MAX 3968
-#define POLICY20_NUM_BUF_MIN 640
-#define POLICY20_NUM_BUF_MAX 640
+#define POLICY18_NUM_BUF_MIN 128
+#define POLICY18_NUM_BUF_MAX 128
+#define POLICY19_NUM_BUF_MIN 2048
+#define POLICY19_NUM_BUF_MAX 4160
 /* WAV700 - RX */
-#define POLICY21_NUM_BUF_MIN 40000
-#define POLICY21_NUM_BUF_MAX 48190
+#define POLICY22_NUM_BUF_MIN 20000
+#define POLICY22_NUM_BUF_MAX 40000
 /* WAV700 - TX */
-#define POLICY22_NUM_BUF_MIN 80000
-#define POLICY22_NUM_BUF_MAX 88190
+#define POLICY23_NUM_BUF_MIN 40000
+#define POLICY23_NUM_BUF_MAX 80000
 /* DocSIS-Data */
-#define POLICY23_NUM_BUF_MIN 59065
-#define POLICY23_NUM_BUF_MAX 60509
-#define POLICY24_NUM_BUF_MIN 24195
-#define POLICY24_NUM_BUF_MAX 42622
-#define POLICY25_NUM_BUF_MIN 192
-#define POLICY25_NUM_BUF_MAX 192
+#define POLICY24_NUM_BUF_MIN 8192
+#define POLICY24_NUM_BUF_MAX 49152
+#define POLICY25_NUM_BUF_MIN 2048
+#define POLICY25_NUM_BUF_MAX 16384
+#define POLICY26_NUM_BUF_MIN 2048
+#define POLICY26_NUM_BUF_MAX 36864
+#define POLICY27_NUM_BUF_MIN 2048
+#define POLICY27_NUM_BUF_MAX 12288
 /* DocSIS_MMM */
-#define POLICY26_NUM_BUF_MIN 128
-#define POLICY26_NUM_BUF_MAX 512
+#define POLICY28_NUM_BUF_MIN 256
+#define POLICY28_NUM_BUF_MAX 1024
 /* DocSIS_Voice */
-#define POLICY27_NUM_BUF_MIN 1024
-#define POLICY27_NUM_BUF_MAX 1900
+#define POLICY29_NUM_BUF_MIN 512
+#define POLICY29_NUM_BUF_MAX 2048
+/* DocSIS_MPEG */
+#define POLICY30_NUM_BUF_MIN 512
+#define POLICY30_NUM_BUF_MAX 2048
 /* LRO uC */
-#define POLICY28_NUM_BUF_MIN 1856
-#define POLICY28_NUM_BUF_MAX 10046
+#define POLICY31_NUM_BUF_MIN 640
+#define POLICY31_NUM_BUF_MAX 640
 
 #define ICC_POOL_SIZE 0x4000000
 #define RW_POOL_SIZE 0x2100000
-#define CPU_POOL_SIZE 0x3070000
-#define SYS_POOL_SIZE 0x16480000
+#define CPU_POOL_SIZE 0x3238000
+#define SYS_POOL_SIZE 0x130F4000
 #define RO_POOL_SIZE 0x618000
 
-#define LINUX_CMA_SIZE 0x26400000
+#define LINUX_CMA_SIZE 0x23000000
 
 #else
 #error "Only WAVE700 is supported with DOCSIS GW"
@@ -127,65 +128,66 @@
  * Cable EMTA + MODEM + 1GB DDR
  **************************************************/
 
-#define POOL0_NUM_BUF 128
-#define POOL1_NUM_BUF 60928
-#define POOL2_NUM_BUF 39488
-#define POOL3_NUM_BUF 320
-#define POOL4_NUM_BUF 1024
-#define POOL5_NUM_BUF 128
-#define POOL6_NUM_BUF 640
-#define POOL7_NUM_BUF 3968
-#define POOL8_NUM_BUF 640
-#define POOL9_NUM_BUF 64
+#define POOL0_NUM_BUF  128
+#define POOL1_NUM_BUF  84544
+#define POOL2_NUM_BUF  26048
+#define POOL3_NUM_BUF  0
+#define POOL4_NUM_BUF  0
+#define POOL5_NUM_BUF  1024
+#define POOL6_NUM_BUF  128
+#define POOL7_NUM_BUF  4160
+#define POOL8_NUM_BUF  0
+#define POOL9_NUM_BUF  0
+#define POOL10_NUM_BUF 640
+#define POOL11_NUM_BUF 64
 
 /* System */
 #define POLICY0_NUM_BUF_MIN 64
-#define POLICY0_NUM_BUF_MAX 1927
-#define POLICY1_NUM_BUF_MIN 64
-#define POLICY1_NUM_BUF_MAX 1799
-#define POLICY2_NUM_BUF_MIN 8245
-#define POLICY2_NUM_BUF_MAX 10195
-#define POLICY3_NUM_BUF_MIN 128
-#define POLICY3_NUM_BUF_MAX 128
+#define POLICY0_NUM_BUF_MAX 32896
+#define POLICY1_NUM_BUF_MIN 8192
+#define POLICY1_NUM_BUF_MAX 32768
+#define POLICY2_NUM_BUF_MIN 2048
+#define POLICY2_NUM_BUF_MAX 10240
 /* TSO/LRO */
-#define POLICY4_NUM_BUF_MIN 2048
-#define POLICY4_NUM_BUF_MAX 2560
+#define POLICY5_NUM_BUF_MIN 1679
+#define POLICY5_NUM_BUF_MAX 3358
 /* Voice */
-#define POLICY16_NUM_BUF_MIN 1024
-#define POLICY16_NUM_BUF_MAX 1024
+#define POLICY17_NUM_BUF_MIN 1024
+#define POLICY17_NUM_BUF_MAX 1024
 /* CPU */
-#define POLICY17_NUM_BUF_MIN 128
-#define POLICY17_NUM_BUF_MAX 128
-#define POLICY18_NUM_BUF_MIN 640
-#define POLICY18_NUM_BUF_MAX 640
-#define POLICY19_NUM_BUF_MIN 3968
-#define POLICY19_NUM_BUF_MAX 3968
-#define POLICY20_NUM_BUF_MIN 640
-#define POLICY20_NUM_BUF_MAX 640
+#define POLICY18_NUM_BUF_MIN 128
+#define POLICY18_NUM_BUF_MAX 128
+#define POLICY19_NUM_BUF_MIN 2048
+#define POLICY19_NUM_BUF_MAX 4160
 /* DocSIS-Data */
-#define POLICY23_NUM_BUF_MIN 59065
-#define POLICY23_NUM_BUF_MAX 60509
-#define POLICY24_NUM_BUF_MIN 24195
-#define POLICY24_NUM_BUF_MAX 30142
-#define POLICY25_NUM_BUF_MIN 192
-#define POLICY25_NUM_BUF_MAX 192
+#define POLICY24_NUM_BUF_MIN 8192
+#define POLICY24_NUM_BUF_MAX 49152
+#define POLICY25_NUM_BUF_MIN 2048
+#define POLICY25_NUM_BUF_MAX 16384
+#define POLICY26_NUM_BUF_MIN 2048
+#define POLICY26_NUM_BUF_MAX 36864
+#define POLICY27_NUM_BUF_MIN 2048
+#define POLICY27_NUM_BUF_MAX 12288
 /* DocSIS_MMM */
-#define POLICY26_NUM_BUF_MIN 128
-#define POLICY26_NUM_BUF_MAX 512
+#define POLICY28_NUM_BUF_MIN 256
+#define POLICY28_NUM_BUF_MAX 1024
 /* DocSIS_Voice */
-#define POLICY27_NUM_BUF_MIN 1024
-#define POLICY27_NUM_BUF_MAX 1900
+#define POLICY29_NUM_BUF_MIN 512
+#define POLICY29_NUM_BUF_MAX 2048
+/* DocSIS_MPEG */
+#define POLICY30_NUM_BUF_MIN 512
+#define POLICY30_NUM_BUF_MAX 2048
 /* LRO uC */
-#define POLICY28_NUM_BUF_MIN 1856
-#define POLICY28_NUM_BUF_MAX 3806
+#define POLICY31_NUM_BUF_MIN 640
+#define POLICY31_NUM_BUF_MAX 640
 
 #define ICC_POOL_SIZE 0x1000000
 #define RW_POOL_SIZE 0x1490000
-#define CPU_POOL_SIZE 0x3070000
-#define SYS_POOL_SIZE 0x6E00000
+#define CPU_POOL_SIZE 0x3238000
+#define SYS_POOL_SIZE 0x6284000
 #define RO_POOL_SIZE 0x618000
 
-#define LINUX_CMA_SIZE 0x11C00000
+#define LINUX_CMA_SIZE 0x11000000
 
 #else
 #error "Only 1GB DDR is supported with MODEM"
@@ -212,52 +214,64 @@
 		};
 		pool@2 {
 			reg = <2>;
-			pool,buff_sz = <2048>;
+			pool,buff_sz = <2304>;
 			pool,pool-num_buffs = <POOL2_NUM_BUF>;
 			pool,type = <CQM_NIOC_SHARED>;
 		};
 		pool@3 {
 			reg = <3>;
-			pool,buff_sz = <10240>;
+			pool,buff_sz = <0>;
 			pool,pool-num_buffs = <POOL3_NUM_BUF>;
 			pool,type = <CQM_NIOC_SHARED>;
 		};
-		/* Voice Pool: type = CQM_NIOC_ISOLATED */
 		pool@4 {
 			reg = <4>;
-			pool,buff_sz = <2048>;
+			pool,buff_sz = <0>;
 			pool,pool-num_buffs = <POOL4_NUM_BUF>;
+			pool,type = <CQM_NIOC_SHARED>;
+		};
+		/* Voice Pool: type = CQM_NIOC_ISOLATED */
+		pool@5 {
+			reg = <5>;
+			pool,buff_sz = <2048>;
+			pool,pool-num_buffs = <POOL5_NUM_BUF>;
 			pool,type = <CQM_NIOC_ISOLATED>;
 		};
 		/* CPU Pools: type = CQM_CPU_ISOLATED */
-		pool@5 {
-			reg = <5>;
-			pool,buff_sz = <512>;
-			pool,pool-num_buffs = <POOL5_NUM_BUF>;
-			pool,type = <CQM_CPU_ISOLATED>;
-		};
 		pool@6 {
 			reg = <6>;
-			pool,buff_sz = <1024>;
+			pool,buff_sz = <512>;
 			pool,pool-num_buffs = <POOL6_NUM_BUF>;
 			pool,type = <CQM_CPU_ISOLATED>;
 		};
 		pool@7 {
 			reg = <7>;
-			pool,buff_sz = <2048>;
+			pool,buff_sz = <2560>;
 			pool,pool-num_buffs = <POOL7_NUM_BUF>;
 			pool,type = <CQM_CPU_ISOLATED>;
 		};
 		pool@8 {
 			reg = <8>;
-			pool,buff_sz = <65536>;
+			pool,buff_sz = <0>;
 			pool,pool-num_buffs = <POOL8_NUM_BUF>;
 			pool,type = <CQM_CPU_ISOLATED>;
 		};
 		pool@9 {
 			reg = <9>;
-			pool,buff_sz = <2048>;
+			pool,buff_sz = <0>;
 			pool,pool-num_buffs = <POOL9_NUM_BUF>;
+			pool,type = <CQM_CPU_ISOLATED>;
+		};
+		pool@10 {
+			reg = <10>;
+			pool,buff_sz = <65536>;
+			pool,pool-num_buffs = <POOL10_NUM_BUF>;
+			pool,type = <LROUC_IOC_ISOLATED>;
+		};
+		pool@11 {
+			reg = <11>;
+			pool,buff_sz = <2048>;
+			pool,pool-num_buffs = <POOL11_NUM_BUF>;
 			pool,type = <SSB_LROUC_NIOC_SHARED>;
 		};
 	};
@@ -284,33 +298,22 @@
 			policy,alloc = <POLICY2_NUM_BUF_MIN POLICY2_NUM_BUF_MAX>;
 			policy,direction = <CQM_TX_RX>;
 		};
-		bm_policy@3 {
-			reg = <3>;
-			policy,pool = <3 DP_RES_ID_SYS>;
-			policy,alloc = <POLICY3_NUM_BUF_MIN POLICY3_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
-		};
-		/* TOE TX policy */
-		bm_policy@4 {
-			reg = <4>;
-			policy,pool = <2 DP_RES_ID_SYS>;
-			policy,alloc = <POLICY4_NUM_BUF_MIN POLICY4_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX>;
+		/* common policy for TSO and LRO */
+		bm_policy@5 {
+			reg = <5>;
+			policy,pool = <11 DP_RES_ID_LROUC>,
+				      <2 DP_RES_ID_LROUC>;
+			policy,alloc = <POLICY5_NUM_BUF_MIN POLICY5_NUM_BUF_MAX>;
+			policy,direction = <CQM_RX>;
 		};
 		/* Voice Policy */
-		bm_policy@16 {
-			reg = <16>;
-			policy,pool = <4 DP_RES_ID_VOICE0>;
-			policy,alloc = <POLICY16_NUM_BUF_MIN POLICY16_NUM_BUF_MAX>;
+		bm_policy@17 {
+			reg = <17>;
+			policy,pool = <5 DP_RES_ID_VOICE0>;
+			policy,alloc = <POLICY17_NUM_BUF_MIN POLICY17_NUM_BUF_MAX>;
 			policy,direction = <CQM_RX>;
 		};
 		/* CPU Policies */
-		bm_policy@17 {
-			reg = <17>;
-			policy,pool = <5 DP_RES_ID_CPU> ;
-			policy,alloc = <POLICY17_NUM_BUF_MIN POLICY17_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
-		};
 		bm_policy@18 {
 			reg = <18>;
 			policy,pool = <6 DP_RES_ID_CPU> ;
@@ -323,66 +326,75 @@
 			policy,alloc = <POLICY19_NUM_BUF_MIN POLICY19_NUM_BUF_MAX>;
 			policy,direction = <CQM_TX_RX>;
 		};
-		bm_policy@20 {
-			reg = <20>;
-			policy,pool = <8 DP_RES_ID_CPU> ;
-			policy,alloc = <POLICY20_NUM_BUF_MIN POLICY20_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
-		};
 
 		#if defined(CONFIG_WAVE_700)
-		bm_policy@21 {
-			reg = <21>;
-			policy,pool = <2 DP_RES_ID_WAV700>;
-			policy,alloc = <POLICY21_NUM_BUF_MIN POLICY21_NUM_BUF_MAX>;
-			policy,direction = <CQM_RX>;
-		};
 		bm_policy@22 {
 			reg = <22>;
 			policy,pool = <2 DP_RES_ID_WAV700>;
 			policy,alloc = <POLICY22_NUM_BUF_MIN POLICY22_NUM_BUF_MAX>;
+			policy,direction = <CQM_RX>;
+		};
+		bm_policy@23 {
+			reg = <23>;
+			policy,pool = <2 DP_RES_ID_WAV700>;
+			policy,alloc = <POLICY23_NUM_BUF_MIN POLICY23_NUM_BUF_MAX>;
 			policy,direction = <CQM_TX>;
 		};
 		#endif
 
-		bm_policy@23 {
-			reg = <23>;
-			policy,pool = <1 DP_RES_ID_DOCSIS>;
-			policy,alloc = <POLICY23_NUM_BUF_MIN POLICY23_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
-		};
 		bm_policy@24 {
 			reg = <24>;
-			policy,pool = <2 DP_RES_ID_DOCSIS>;
+			policy,pool = <1 DP_RES_ID_DOCSIS>;
 			policy,alloc = <POLICY24_NUM_BUF_MIN POLICY24_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
+			policy,direction = <CQM_RX>;
 		};
 		bm_policy@25 {
 			reg = <25>;
-			policy,pool = <3 DP_RES_ID_DOCSIS>;
+			policy,pool = <2 DP_RES_ID_DOCSIS>;
 			policy,alloc = <POLICY25_NUM_BUF_MIN POLICY25_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
+			policy,direction = <CQM_RX>;
 		};
 		bm_policy@26 {
 			reg = <26>;
-			policy,pool = <2 DP_RES_ID_DOCSIS_MMM>;
+			policy,pool = <1 DP_RES_ID_DOCSIS>;
 			policy,alloc = <POLICY26_NUM_BUF_MIN POLICY26_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
+			policy,direction = <CQM_TX>;
 		};
 		bm_policy@27 {
 			reg = <27>;
-			policy,pool = <2 DP_RES_ID_DOCSIS_VOICE>;
+			policy,pool = <2 DP_RES_ID_DOCSIS>;
 			policy,alloc = <POLICY27_NUM_BUF_MIN POLICY27_NUM_BUF_MAX>;
-			policy,direction = <CQM_TX_RX>;
+			policy,direction = <CQM_TX>;
 		};
 		bm_policy@28 {
 			reg = <28>;
-			policy,pool = <9 DP_RES_ID_LROUC>,
-				      <2 DP_RES_ID_LROUC>;
+			policy,pool = <2 DP_RES_ID_DOCSIS_MMM>;
 			policy,alloc = <POLICY28_NUM_BUF_MIN POLICY28_NUM_BUF_MAX>;
+			policy,direction = <CQM_TX_RX>;
+		};
+		bm_policy@29 {
+			reg = <29>;
+			policy,pool = <2 DP_RES_ID_DOCSIS_VOICE>;
+			policy,alloc = <POLICY29_NUM_BUF_MIN POLICY29_NUM_BUF_MAX>;
+			policy,direction = <CQM_TX_RX>;
+		};
+		bm_policy@30 {
+			reg = <30>;
+			policy,pool = <2 DP_RES_ID_DOCSIS_MPEG>;
+			policy,alloc = <POLICY30_NUM_BUF_MIN POLICY30_NUM_BUF_MAX>;
+			policy,direction = <CQM_TX_RX>;
+		};
+		bm_policy@31 {
+			reg = <31>;
+			policy,pool = <10 DP_RES_ID_LROUC>;
+			policy,alloc = <POLICY31_NUM_BUF_MIN POLICY31_NUM_BUF_MAX>;
 			policy,direction = <CQM_RX>;
 		};
 	};
+};
+
+&buffer_pool_size {
+	mxl,bm-buff-pool-size = <0x100 0x200 0xA00 0x10000 0x10004>;
 };
 
 &noc_pool {

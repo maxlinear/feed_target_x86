@@ -740,7 +740,7 @@
 			interrupt-parent = <&ioapic1>;
 			interrupts = <130 1>;
 			interrupt-names = "asc_irq";
-			clocks = <&cgu0 LGM_CLK_NOC4>, <&cgu0 LGM_GCLK_ASC3>;
+			clocks = <&cgu0 LGM_CLK_OSC>, <&cgu0 LGM_GCLK_ASC3>;
 			clock-names = "freq", "asc";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart3>;
@@ -1446,7 +1446,7 @@
 			#dma-cells = <1>;
 			intel,dma-poll-cnt = <2>;
 			intel,dma-byte-en;
-			mxl,dma-rs-pool = <0 8>, <1 8>, <2 8>, <3 8>, <4 8>, <5 8>, <6 8>, <7 8>, <8 8>, <9 8>, <10 0>, <11 0>, <12 0>, <13 0>, <14 0>, <15 0>;
+			mxl,dma-rs-pool = <0 8>, <1 8>, <2 8>, <3 8>, <4 8>, <5 8>, <6 8>, <7 8>, <8 8>, <9 8>, <10 0>, <11 8>, <12 0>, <13 0>, <14 0>, <15 0>;
 			ldma,channels {
 				#size-cells = <0>;
 				#address-cells = <1>;
@@ -3343,4 +3343,5 @@
 };
 
 #include "lgm_pinctrl.dtsi"
+#include "lgm_main_dpm.dtsi"
 

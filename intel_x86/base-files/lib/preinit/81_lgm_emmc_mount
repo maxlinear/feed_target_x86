@@ -24,6 +24,10 @@ mount_root_lgm() {
 		if [ $? -eq 0 ]; then
 			lcm_data_partname=$partname
 		fi
+		partname=$(grep -q -w "PARTNAME=config" "$partition" && grep "DEVNAME" "$partition" | cut -d= -f2)
+		if [ $? -eq 0 ]; then
+			config_partname=$partname
+		fi
 
 	done
 	
@@ -48,6 +52,11 @@ mount_root_lgm() {
 		major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$lcm_data_partname/uevent | grep MAJOR | cut -d '=' -f2)
  		minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$lcm_data_partname/uevent | grep MINOR | cut -d '=' -f2)
 		mknod /dev/$lcm_data_partname b $major_value $minor_value > /dev/null 2>&1
+	fi
+	if [ ! -e "/dev/$config_partname" ]; then
+		major_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$config_partname/uevent | grep MAJOR | cut -d '=' -f2)
+		minor_value=$(cat /sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/$config_partname/uevent | grep MINOR | cut -d '=' -f2)
+		mknod /dev/$config_partname b $major_value $minor_value > /dev/null 2>&1
 	fi
 
 	[ ! -z "$overlay_partname" ] && [ -e "/dev/$overlay_partname" ] && {
@@ -154,6 +163,27 @@ mount_root_lgm() {
 		mount -t ext4  /dev/$lcm_data_partname /lcm || {
 			mkfs.ext4 /dev/$lcm_data_partname
 			mount -t ext4 /dev/$lcm_data_partname /lcm
+		}
+
+	}
+
+	[ ! -z "$config_partname" ] && [ -e "/dev/$config_partname" ] && {
+		if [ ! -d "/cfg" ]; then
+			mkdir /cfg
+			chmod 600 /cfg
+		fi
+
+		e2fsck -p /dev/$config_partname > /dev/null
+		ret=$?
+
+		if [ $(( ret&4 )) -eq 4 ]; then
+			echo "e2fsck recovery failed"
+			e2fsck -y /dev/$config_partname > /dev/null
+		fi
+
+		mount -t ext4  /dev/$config_partname /cfg || {
+			mkfs.ext4 -F /dev/$config_partname
+			mount -t ext4 /dev/$config_partname /cfg
 		}
 
 	}
