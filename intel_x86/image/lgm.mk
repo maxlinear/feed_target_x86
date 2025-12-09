@@ -62,7 +62,7 @@ define Build/fullimage
 		-e 0x00 -n 'LEDE RootFS' \
 		-d $(2) $@.rootfs.wo_sign
 	mkdir -p $(BIN_DIR)/non_signed_image
-	mv $@.rootfs.wo_sign $(2).pad 
+	mv $@.rootfs.wo_sign $(2).pad
 	cp -vf $(2).pad $(BIN_DIR)/non_signed_image
 endef
 else
@@ -804,53 +804,41 @@ define Device/PRPL_OSP_TB341
 endef
 TARGET_DEVICES += PRPL_OSP_TB341
 
-define Device/PRPL_OSP_TB341_v2
+define Device/PRPL_OSP_v2
   $(Device/LGM_GENERIC)
-  DEVICE_TITLE := LGM Model for prplOS osp tb341 v2
+  DEVICE_TITLE := LGM Model for prplOS osp v2(a and b step)
   IMAGE/overlay.dtbo := dtbo overlay_pon
-  IMAGE/osp_tb341_v2_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
-  IMAGE/osp_tb341_v2_wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
-  IMAGE/osp_tb341_v2_wav700.dtb := dtb osp_tb341_v2_wav700_eth
-  IMAGE/osp_tb341_v2_wav700_eth_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_eth.dtb
-  IMAGE/osp_tb341_v2_wav700_pon_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_pon.dtb
-  IMAGE/osp_tb341_v2_wav700_fullimage.img := fullimage 16 squashfs osp_tb341_v2_wav700_eth.dtb osp_tb341_v2_wav700.dtb
-  IMAGES += kernel.bin \
-		overlay.dtbo \
-		osp_tb341_v2_wav700_eth.dtb \
-		osp_tb341_v2_wav700_pon.dtb
-  FULLIMAGES := osp_tb341_v2_wav700_eth_fullimage.img \
-		osp_tb341_v2_wav700_pon_fullimage.img
-  SINGLE_FULLIMAGE := osp_tb341_v2_wav700_fullimage.img
-  ROOTFS := fs.rootfs
-  ROOTFS_PREPARE := add-servicelayer-schema
-  DEVICE_PACKAGES := $(PM_PACKAGES)\
-                     $(UGW_DIAG_PACKAGES)
-endef
-TARGET_DEVICES += PRPL_OSP_TB341_v2
+  IMAGE/tb341_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
+  IMAGE/tb341_wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
+  IMAGE/tb341_wav700.dtb := dtb osp_tb341_v2_wav700_eth
+  IMAGE/wgrtd159be_b_wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
+  IMAGE/wgrtd159be_b_wav700_pon.dtb := dtb osp_wgrtd159be_b_v2_wav700_pon
+  IMAGE/wgrtd159be_b_wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
 
-define Device/PRPL_OSPv2_WGRTD159BE_B
-  $(Device/LGM_GENERIC)
-  DEVICE_TITLE := LGM Model for prplOS osp wgrtd159be b v2
-  IMAGE/overlay.dtbo := dtbo overlay_pon
-  IMAGE/wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-  IMAGE/wav700_pon.dtb := dtb osp_wgrtd159be_b_v2_wav700_pon
-  IMAGE/wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-  IMAGE/wav700_eth_fullimage.img := fullimage 16 squashfs wav700_eth.dtb
-  IMAGE/wav700_pon_fullimage.img := fullimage 16 squashfs wav700_pon.dtb
-  IMAGE/wav700_fullimage.img := fullimage 16 squashfs wav700_eth.dtb wav700.dtb
+  IMAGE/tb341_wav700_eth_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb
+  IMAGE/tb341_wav700_pon_fullimage.img := fullimage 16 squashfs tb341_wav700_pon.dtb
+  IMAGE/tb341_wav700_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb tb341_wav700.dtb
+  IMAGE/wgrtd159be_b_wav700_eth_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb
+  IMAGE/wgrtd159be_b_wav700_pon_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_pon.dtb
+  IMAGE/wgrtd159be_b_wav700_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb wgrtd159be_b_wav700.dtb
   IMAGES += kernel.bin \
 		overlay.dtbo \
-		wav700_eth.dtb \
-		wav700_pon.dtb
-  FULLIMAGES := wav700_eth_fullimage.img \
-		wav700_pon_fullimage.img
-  SINGLE_FULLIMAGE := wav700_fullimage.img
+		tb341_wav700_eth.dtb \
+		tb341_wav700_pon.dtb \
+		wgrtd159be_b_wav700_eth.dtb \
+		wgrtd159be_b_wav700_pon.dtb
+  FULLIMAGES := tb341_wav700_eth_fullimage.img \
+		tb341_wav700_pon_fullimage.img  \
+		wgrtd159be_b_wav700_eth_fullimage.img \
+		wgrtd159be_b_wav700_pon_fullimage.img
+  SINGLE_FULLIMAGE := tb341_wav700_fullimage.img \
+	        wgrtd159be_b_wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
                      $(UGW_DIAG_PACKAGES)
 endef
-TARGET_DEVICES += PRPL_OSPv2_WGRTD159BE_B
+TARGET_DEVICES += PRPL_OSP_v2
 
 define Device/PRPL_MB_URX_MINIFS
   $(Device/LGM_GENERIC)
