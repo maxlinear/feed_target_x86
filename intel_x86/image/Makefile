@@ -72,8 +72,6 @@ define Build/uImage-x86_64
                 -C $(1) -a $(KERNEL_LOADADDR) -e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) \
                 -n '$(if $(UIMAGE_NAME),$(UIMAGE_NAME),$(call toupper,x86_64) LEDE Linux-$(LINUX_VERSION))' -d  $@ $@.new
         @mv $@.new $@
-	mkdir -p $(BIN_DIR)/non_signed_image;
-	cp $@ $(BIN_DIR)/non_signed_image;
 endef
 
 else

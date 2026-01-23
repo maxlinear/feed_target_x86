@@ -62,8 +62,8 @@ define Build/fullimage
 		-e 0x00 -n 'LEDE RootFS' \
 		-d $(2) $@.rootfs.wo_sign
 	mkdir -p $(BIN_DIR)/non_signed_image
-	mv $@.rootfs.wo_sign $(2).pad
-	cp -vf $(2).pad $(BIN_DIR)/non_signed_image
+	mv $@.rootfs.wo_sign $(2)	
+	cp -vf $(2) $(BIN_DIR)/non_signed_image
 endef
 else
 define Build/sign-image
@@ -190,6 +190,7 @@ define Build/fullimage
 endef
 endif
 
+ifeq ($(CONFIG_INTEL_X86_IMAGE_FORMAT_FIT),y)
 ifeq ($(CONFIG_INTEL_X86_SECBOOT),y)
 ifeq ($(CONFIG_INTEL_X86_EXTERNAL_IMAGE_SIGNING),y)
 # generates kernel+dtb in fit format.
@@ -212,13 +213,12 @@ define Build/fit-kernel-dtb
 		-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x0$(3) -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
 		-cert $(CONFIG_INTEL_X86_CERTIFICATION) -infile $(2) -outfile $@.dtb.signed
 	dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync;
-
 	#its file update and fit image creation
 	$(eval DTB_BASE_FILE:=$(basename $(notdir $(2))))
 	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 	sed -e 's@KERNEL@$(IMAGE_KERNEL).fitimage@g' \
-		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+    		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
 		-e 's@DTB@$@.dtb@g' kernel-dtb-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb.fit
 endef
@@ -235,10 +235,10 @@ else
 define Build/fit-kernel-dtb
 	gzip -f -9n -c $(KDIR)/vmlinux > $(KDIR)/vmlinux.gz
 	$(eval DTB_BASE_FILE:=$(basename $(notdir $(2))))
-	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
+ 	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 	sed -e 's@KERNEL@$(KDIR)/vmlinux.gz@g' \
-		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+    		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
 		-e 's@DTB@$(2)@g' kernel-dtb-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb.fit
 endef
@@ -252,17 +252,25 @@ endef
 endif
 # generates rootfs in fit format.
 define Build/fit-rootfs
-	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
+  	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 	dd if=$@ of=$@.tmp bs=16 conv=sync;
 	mv $@.tmp $@
 	sed -e 's@ROOTFS@$@@g' \
-		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
-	rootfs-fit.its > $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its
+    		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+    		rootfs-fit.its > $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)_rootfs.fit
+	mkdir -p $(BIN_DIR)/fitimages
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/fitimages/$(DEVICE_IMG_PREFIX)_rootfs.fit
+	$(if $(CONFIG_INTEL_X86_SINGLE_IMAGE), \
+		mkdir -p $(BIN_DIR)/single-images/fitimages; \
+		cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/single-images/fitimages/$(DEVICE_IMG_PREFIX)_rootfs.fit)
 endef
+else
+define Build/fit-rootfs
+	echo "" > /dev/null
+endef
+endif
 
 # generates dtb file with basedtb (eth dtb) and overlay PON dtbo.
 define Build/singledtb
@@ -311,7 +319,8 @@ define Device/Build/image-non-rootfs
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)
+	[  "$(suffix $(1))" = ".dtbo" ] && cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)
 
 endef
 endif
@@ -336,8 +345,7 @@ define Device/Build/fullimage
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-	mkdir -p $(BIN_DIR)/dual-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)-$(1)
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)
 
   .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 
@@ -348,14 +356,11 @@ define Device/Build/singlefullimage
   $(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage,$(1)))
 
   $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1)))
-	@rm -rf $$@
-	[ -f $$(word 1,$$^) ]
 	$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1))),8100000)
 
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-	mkdir -p $(BIN_DIR)/single-images
 	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(1)
 
   .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
@@ -369,20 +374,21 @@ define Device/Build/fitimage
 	$$(call Build/fit-kernel-dtb,$(word 2,$(IMAGE/$(1))),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs,8000000)
 
   $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
+	@rm -rf $$@
+	[ -f $$(word 1,$$^) ]
 	$$(call Build/fit-fullimage,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit)
 
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
 
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
-	mkdir -p $(BIN_DIR)/dual-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)_rootfs.fit
+  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
+	mkdir -p $(BIN_DIR)/fitimages
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/fitimages/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
 
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
-	mkdir -p $(BIN_DIR)/dual-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
+	mkdir -p $(BIN_DIR)/fitimages
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit $(BIN_DIR)/fitimages/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
 
   .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
   .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
@@ -402,14 +408,14 @@ define Device/Build/singlefitimage
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
+	mkdir -p $(BIN_DIR)/single-images/fitimages
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/single-images/fitimages/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
 
   .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
 
   $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
+	mkdir -p $(BIN_DIR)/single-images/fitimages
+	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit $(BIN_DIR)/single-images/fitimages/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
 
   .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
   .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
@@ -433,12 +439,19 @@ define Device/Build
   $$(eval $$(foreach image,$$(IMAGES), \
     $$(call Device/Build/image-non-rootfs,$$(image),$(1))))
 
-#  $$(eval $$(foreach image,$$(FULLIMAGES), \
-#    $$(call Device/Build/fitimage,$$(image),$(1))))
+  $$(eval $$(foreach image,$$(FULLIMAGES), \
+    $(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE), \
+    $$(call Device/Build/fullimage,$$(image),$(1))) \
+    $(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_FIT), \
+    $$(call Device/Build/fitimage,$$(image),$(1)))))
 
+  $(if $(CONFIG_INTEL_X86_SINGLE_IMAGE), \
   $$(eval $$(foreach image,$$(SINGLE_FULLIMAGE), \
     $$(call Device/Build/singledtb,$$(image),$(1)) \
-    $$(call Device/Build/singlefitimage,$$(image),$(1))))
+    $(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_MKIMAGE), \
+    $$(call Device/Build/singlefullimage,$$(image),$(1))) \
+    $(if $(CONFIG_INTEL_X86_IMAGE_FORMAT_FIT), \
+    $$(call Device/Build/singlefitimage,$$(image),$(1))))))
 
 endef
 
@@ -814,7 +827,7 @@ define Device/PRPL_OSP_v2
   IMAGE/wgrtd159be_b_wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
   IMAGE/wgrtd159be_b_wav700_pon.dtb := dtb osp_wgrtd159be_b_v2_wav700_pon
   IMAGE/wgrtd159be_b_wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-
+  
   IMAGE/tb341_wav700_eth_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb
   IMAGE/tb341_wav700_pon_fullimage.img := fullimage 16 squashfs tb341_wav700_pon.dtb
   IMAGE/tb341_wav700_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb tb341_wav700.dtb
@@ -860,29 +873,51 @@ define Device/PRPL_MB_URX
   DEVICE_TITLE := LGM CBSP B-Step Model for prplos
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
+  IMAGE/641_wav700_eth_pm.dtb := dtb octopus_641_wav700_eth_pm
   IMAGE/641_wav700_pon.dtb := dtb octopus_641_wav700_pon
+  IMAGE/641_wav700_pon_pm.dtb := dtb octopus_641_wav700_pon_pm
   IMAGE/851_wav700_eth.dtb := dtb octopus_851_wav700_eth
+  IMAGE/851_wav700_eth_pm.dtb := dtb octopus_851_wav700_eth_pm
   IMAGE/851_wav700_pon.dtb := dtb octopus_851_wav700_pon
+  IMAGE/851_wav700_pon_pm.dtb := dtb octopus_851_wav700_pon_pm
   IMAGE/641_wav700.dtb := dtb octopus_641_wav700_eth
+  IMAGE/641_wav700_pm.dtb := dtb octopus_641_wav700_eth_pm
   IMAGE/851_wav700.dtb := dtb octopus_851_wav700_eth
+  IMAGE/851_wav700_pm.dtb := dtb octopus_851_wav700_eth_pm
   IMAGE/641_wav700_eth_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb
+  IMAGE/641_wav700_eth_fullimage_pm.img := fullimage 16 squashfs 641_wav700_eth_pm.dtb
   IMAGE/641_wav700_pon_fullimage.img := fullimage 16 squashfs 641_wav700_pon.dtb
+  IMAGE/641_wav700_pon_fullimage_pm.img := fullimage 16 squashfs 641_wav700_pon_pm.dtb
   IMAGE/851_wav700_eth_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb
+  IMAGE/851_wav700_eth_fullimage_pm.img := fullimage 16 squashfs 851_wav700_eth_pm.dtb
   IMAGE/851_wav700_pon_fullimage.img := fullimage 16 squashfs 851_wav700_pon.dtb
+  IMAGE/851_wav700_pon_fullimage_pm.img := fullimage 16 squashfs 851_wav700_pon_pm.dtb
   IMAGE/641_wav700_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb 641_wav700.dtb
+  IMAGE/641_wav700_fullimage_pm.img := fullimage 16 squashfs 641_wav700_eth_pm.dtb 641_wav700_pm.dtb
   IMAGE/851_wav700_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb 851_wav700.dtb
+  IMAGE/851_wav700_fullimage_pm.img := fullimage 16 squashfs 851_wav700_eth_pm.dtb 851_wav700_pm.dtb
   IMAGES += kernel.bin \
 	    overlay.dtbo \
 	    641_wav700_eth.dtb \
+	    641_wav700_eth_pm.dtb \
 	    641_wav700_pon.dtb \
+	    641_wav700_pon_pm.dtb \
 	    851_wav700_eth.dtb \
-	    851_wav700_pon.dtb
+	    851_wav700_eth_pm.dtb \
+	    851_wav700_pon.dtb \
+	    851_wav700_pon_pm.dtb
   FULLIMAGES := 641_wav700_eth_fullimage.img \
+	  641_wav700_eth_fullimage_pm.img \
 	  641_wav700_pon_fullimage.img \
+	  641_wav700_pon_fullimage_pm.img \
 	  851_wav700_eth_fullimage.img \
-	  851_wav700_pon_fullimage.img
+	  851_wav700_eth_fullimage_pm.img \
+	  851_wav700_pon_fullimage.img \
+	  851_wav700_pon_fullimage_pm.img
   SINGLE_FULLIMAGE := 641_wav700_fullimage.img \
-    851_wav700_fullimage.img
+    641_wav700_fullimage_pm.img \
+    851_wav700_fullimage.img \
+    851_wav700_fullimage_pm.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
