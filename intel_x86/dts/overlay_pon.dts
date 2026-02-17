@@ -18,6 +18,7 @@
 
 &pon_eth {
 	status = "okay";
+	intel,altname = "sfp0";
 };
 
 &pon_ptp0 {
