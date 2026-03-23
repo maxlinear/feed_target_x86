@@ -113,22 +113,6 @@ endef
 $(eval $(call KernelPackage,mxl_eth_drv))
 
 
-define KernelPackage/mxl_pon_hgu_vuni_lgm
- SUBMENU:= MaxLinear
- TITLE:= MaxLinear PON HGU vUNI Driver (Module Support)
- DEPENDS:= @TARGET_intel_x86_lgm
- KCONFIG:= CONFIG_MXL_PON_HGU_VUNI
- FILES:= $(LINUX_DIR)/drivers/net/ethernet/mxl/mxl_pon_hgu_vuni.ko
- AUTOLOAD:=$(call AutoProbe,mxl_pon_hgu_vuni)
-endef
-
-
-define KernelPackage/mxl_pon_hgu_vuni_lgm/description
-  Mxl PON HGU vUNI Driver module
-endef
-
-$(eval $(call KernelPackage,mxl_pon_hgu_vuni_lgm))
-
 define KernelPackage/p34x_phy_fwdl
  SUBMENU:= MaxLinear
  TITLE:= MaxLinear P34X FW download Driver (Module Support)
@@ -503,7 +487,7 @@ define KernelPackage/mxl-tee
 	CONFIG_MXL_SEC_GEN_POOL=y \
 	CONFIG_MXLTEE=y
 endef
- 
+
 define KernelPackage/mxl-tee/description
   mxl-tee module support
 endef

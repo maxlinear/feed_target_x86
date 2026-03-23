@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
- * Copyright (C) 2021 - 2024 MaxLinear, Inc.
+ * Copyright (C) 2021 - 2024, 2026 MaxLinear, Inc.
  */
-/* Based on released V3.0.31 version on Sep/13/2024 from Ritesh*/
+/* Based on released V3.0.36 version on Jan/28/2026 from Ritesh*/
 
 #include <dt-bindings/soc/mxl,noc_fw_defs.h>
 
@@ -504,6 +504,13 @@
 			target   = <&dma0>;
 			base     = <0x0  0xE0E00000>;
 			end      = <0x0  0xE0E0FFFF>;
+			perm     = <NOC_FW_F_RW>;
+		};
+		rule_cpu_vmm0_61 { /*  119  in FW_LBAXI_Rules */
+			op       = <NOC_FW_OP_ADD>;
+			sai      = <ALL_SAI_IA_VMM_VAL>;
+			base     = <0x0  0xE0040000>;
+			end      = <0x0  0xE0040FFF>;
 			perm     = <NOC_FW_F_RW>;
 		};
 		};
@@ -1720,6 +1727,16 @@
 			base     = <NOC_FW_SPECIAL_REGION  NOC_FW_CPUPOOL_START>;
 			end      = <NOC_FW_SPECIAL_REGION  NOC_FW_CPUPOOL_END>;
 			perm     = <NOC_FW_F_RW>;
+		};
+		};
+		group_pp_deferred {
+		rule_pp_deferred_1 { /*  88  in FW_PERI_Rules */
+			op       = <NOC_FW_OP_ADD>;
+			sai      = <SAI_IA_PP_VAL>;
+			base     = <NOC_FW_SPECIAL_REGION_DYN  NOC_FW_DYN_PCIE_ARGUS_LLD_START>;
+			end      = <NOC_FW_SPECIAL_REGION_DYN  NOC_FW_DYN_PCIE_ARGUS_LLD_END>;
+			perm     = <NOC_FW_F_RW>;
+			deferred;
 		};
 		};
 	};

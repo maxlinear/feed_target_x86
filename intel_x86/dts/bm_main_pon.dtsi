@@ -8,7 +8,7 @@
 
 /*
  * ==========================================================================
- * BM pool/policy configuration V8.05
+ * BM pool/policy configuration V8.06
  * ==========================================================================
  */
 
@@ -133,7 +133,7 @@
 #define POOL0_NUM_BUF  128
 #define POOL1_NUM_BUF  160320
 #define POOL2_NUM_BUF  120000
-#define POOL3_NUM_BUF  8128
+#define POOL3_NUM_BUF  7808
 #define POOL4_NUM_BUF  0
 #define POOL5_NUM_BUF  1024
 #define POOL6_NUM_BUF  128
@@ -145,13 +145,13 @@
 
 /* System */
 #define POLICY0_NUM_BUF_MIN 64
-#define POLICY0_NUM_BUF_MAX 163968
-#define POLICY1_NUM_BUF_MIN 32768
-#define POLICY1_NUM_BUF_MAX 163840
-#define POLICY2_NUM_BUF_MIN 8192
-#define POLICY2_NUM_BUF_MAX 65536
-#define POLICY3_NUM_BUF_MIN 1353
-#define POLICY3_NUM_BUF_MAX 6767
+#define POLICY0_NUM_BUF_MAX 196736
+#define POLICY1_NUM_BUF_MIN 40960
+#define POLICY1_NUM_BUF_MAX 196608
+#define POLICY2_NUM_BUF_MIN 10240
+#define POLICY2_NUM_BUF_MAX 75776
+#define POLICY3_NUM_BUF_MIN 1949
+#define POLICY3_NUM_BUF_MAX 7796
 /* TSO/LRO */
 #define POLICY5_NUM_BUF_MIN 1625
 #define POLICY5_NUM_BUF_MAX 3251
@@ -189,12 +189,12 @@
 #define POLICY31_NUM_BUF_MAX 640
 
 #define ICC_POOL_SIZE 0x4000000
-#define RW_POOL_SIZE 0x2100000
-#define CPU_POOL_SIZE 0x3750000
-#define SYS_POOL_SIZE 0x18214000
-#define RO_POOL_SIZE 0x618000
+#define RW_POOL_SIZE 0x02100000
+#define CPU_POOL_SIZE 0x03780000
+#define SYS_POOL_SIZE 0x18118000
+#define RO_POOL_SIZE 0x00618000
 
-#define LINUX_CMA_SIZE 0x28800000
+#define LINUX_CMA_SIZE 0x28400000
 
 #else
 #error "Please include dtsi file for WAVE configuration"
@@ -325,7 +325,7 @@
 		};
 		pool@3 {
 		reg = <3>;
-			pool,buff_sz = <9472>;
+			pool,buff_sz = <9728>;
 			pool,pool-num_buffs = <POOL3_NUM_BUF>;
 			pool,type = <CQM_NIOC_SHARED>;
 		};
@@ -338,7 +338,7 @@
 		/* Voice Pool: type = CQM_NIOC_ISOLATED */
 		pool@5 {
 			reg = <5>;
-			pool,buff_sz = <2048>;
+			pool,buff_sz = <1024>;
 			pool,pool-num_buffs = <POOL5_NUM_BUF>;
 			pool,type = <CQM_NIOC_ISOLATED>;
 		};
@@ -357,7 +357,7 @@
 		};
 		pool@8 {
 			reg = <8>;
-			pool,buff_sz = <9728>;
+			pool,buff_sz = <9984>;
 			pool,pool-num_buffs = <POOL8_NUM_BUF>;
 			pool,type = <CQM_CPU_ISOLATED>;
 		};
