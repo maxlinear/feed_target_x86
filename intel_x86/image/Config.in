@@ -56,22 +56,6 @@ menuconfig INTEL_X86_SECBOOT
 			CRkey (Confidentiality Root Key) with optional Certificate
 			support and path
 
-config INTEL_X86_IMAGE_FORMAT_FIT
-	bool "Build a image in FIT format"
-	help
-		Builds a image in FIT format.
-
-config INTEL_X86_IMAGE_FORMAT_MKIMAGE
-	bool "Build a image in mkimage format"
-	default y
-	help
-		Builds a image in mkimage format.
-
-config INTEL_X86_SINGLE_IMAGE
-	bool "Build a single image for Eth and PON WAN"
-	help
-		Builds a single image for Eth and PON WAN.
-
 config OSP_TB341_v1_PON_OVERLAY
 	bool "OSP-v1 PON DTS changes for single image"
 	help
