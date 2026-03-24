@@ -3340,6 +3340,12 @@
 			power-domains = <&pd_i2s1>;
 		};
 	};
+	sysregister: sysregister@e0040008 {
+		compatible = "sysregister";
+		reg-names = "bootcount", "force-inactive";
+		reg = <0xe0040008 0x4>, <0xe0040008 0x4>;
+		bitmask = <0xe00000ff 0x10000>;
+	};
 };
 
 #include "lgm_pinctrl.dtsi"
