@@ -83,10 +83,10 @@ CONFIG_UPDATE_ROOTFS="run reset_boot_count; tftp ${loadaddr} ${tftppath}${rootfs
 CONFIG_NET_RAM="tftpboot ${loadaddr} ${tftppath}${bootfile}; run nfsargs addmisc; bootm ${loadaddr}"
 CONFIG_U_BOOT="u-boot-plus-spl-emmc.bin"
 CONFIG_RBE_BINARY="u-boot-spl-emmc.bin"
-CONFIG_BOOTLOADER_BINARY="u-boot-emmc.bin"
+CONFIG_BOOTLOADER_BINARY="u-boot.itb"
 CONFIG_DTB="openwrt-intel_x86-lgm-CBSP_B0-lgp_b0.dtb"
 CONFIG_ROOTFS="/openwrt-intel_x86-lgm-CBSP_B0-squashfs-fs.rootfs"
-CONFIG_FULLIMAGE="openwrt-intel_x86-lgm-CBSP_B0-lgp_b0_fullimage.img"
+CONFIG_FULLIMAGE="prplos-intel_x86-lgm-PRPL_MB_URX-641_wav700_fullimage.fit"
 CONFIG_TEP_FIRMWARE="tep_fw.bin"
 CONFIG_UPDATE_TEP_FIRMWARE="tftpboot ${loadaddr} ${tftppath}${tep_firmware} && setenv select_partition primary; upgrade ${loadaddr} ${filesize} ${tep_firmware}"
 CONFIG_CHECK_IMAGE="echo check image"
@@ -473,7 +473,7 @@ CONFIG_SWITCH_PRIMARY="setenv kernel_bank kernel-active; setenv rootfs_bank kern
 CONFIG_SWITCH_SECONDARY="setenv kernel_bank kernel-inactive; setenv rootfs_bank kernel-inactive; setenv boot_part 'inactive'; echo \"Switched to bank ${boot_part}\";"
 CONFIG_SWITCH_PARTITION="if test ${boot_part} = \"active\"; then run switch_to_secondary; else run switch_to_primary; fi;"
 CONFIG_BOOTCOMMAND="run booted_active_image; run flashargs; run addmisc; run flash_flash;"
-CONFIG_FLASH_FLASH="mmc dev 0 0; run load_late_boot_img; if test $? -eq 1; then echo \"Failed to boot from $boot_part bank\"; run perm_failover_check; run switch_partition; run load_late_boot_img; if test $? -eq 1; then echo \"Failed to boot from $boot_part bank \"; run end_of_world; fi; fi; icc 1 0x${md_ro_start} 0x${md_ro_end} 0x${rootfs_loadaddr} 0x800 && if test ${kernel_bank} = \"kernel-active\"; then echo \"Late Boot from Bank A\"; else echo \"Late Boot from Bank B\"; fi && run formdtbparam && bootm ${kernel_loadaddr} - ${dtbparams}; reset"
+CONFIG_FLASH_FLASH="mmc dev 0 0; run load_late_boot_img; if test $? -eq 1; then echo \"ERROR: Failed to load kernel from ${boot_part} bank\"; echo \"Triggering software reset; SPL will re-evaluate bootcount/bank\"; reset; fi; icc 1 0x${md_ro_start} 0x${md_ro_end} 0x${rootfs_loadaddr} 0x800 && if test ${kernel_bank} = \"kernel-active\"; then echo \"Late Boot from Bank A\"; else echo \"Late Boot from Bank B\"; fi && run formdtbparam && bootm ${kernel_loadaddr} - ${dtbparams}; reset"
 CONFIG_OF_BOARD_FIXUP=y
 CONFIG_PRPL_BOOT_SEQUENCE=y
 CONFIG_PERM_FAILOVER=y
