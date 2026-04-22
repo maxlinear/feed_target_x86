@@ -157,4 +157,4 @@ endef
 
 include lgm.mk
 
-$(eval $(call Image/SignImage))
+$(eval $(call BuildImage))

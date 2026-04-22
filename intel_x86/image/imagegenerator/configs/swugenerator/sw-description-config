@@ -1,0 +1,124 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+// SPDX-FileCopyrightText: Copyright (c) 2025 SoftAtHome
+
+software =
+{
+	description = "Firmware update for Prpl opensource Project";
+	version = "1.0.0";
+	hardware-compatibility:
+	[
+		"#RE:.*"
+	];
+	board_name = {
+		active =
+		{
+			full =
+			{
+				images =
+				(
+					{
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_rbehdlr";
+						device = "/dev/mmcblk0boot0";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
+						name = "u-boot-inactive";
+						filename = "u-boot.itb";
+						type = "gptpart";
+						device = "/dev/mmcblk0";
+						volume = "u-boot-inactive";
+						noinuse = "true";
+						installed-directly = True;
+					},
+					{
+						name = "kernel-inactive";
+						filename = "ext4.img";
+						type = "gptpart";
+						device = "/dev/mmcblk0";
+						volume = "kernel-inactive";
+						noinuse = "true";
+						installed-directly = True;
+					},
+				);
+				scripts =
+		(
+					{
+						type = "gptswap";
+						device = "/dev/mmcblk0";
+						properties =
+						{
+							swap-0 =
+							[
+								"kernel-active",
+								"kernel-inactive"
+							];
+							swap-1 =
+							[
+								"u-boot-active",
+								"u-boot-inactive"
+							];
+							noinuse = "true";
+						};
+					},
+					{
+						filename = "prpl-backup.lua";
+						type = "lua";
+					},
+					{
+						filename = "prpl-enable-failover.lua";
+						type = "lua";
+					},
+				);
+			};
+		};
+		inactive =
+		{
+			full =
+			{
+				images =
+				(
+					{
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_rbehdlr";
+						device = "/dev/mmcblk0boot0";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
+						name = "u-boot-active";
+						filename = "u-boot.itb";
+						type = "gptpart";
+						device = "/dev/mmcblk0";
+						volume = "u-boot-active";
+						noinuse = "true";
+						installed-directly = True;
+					},
+					{
+						name = "kernel-active";
+						filename = "ext4.img";
+						type = "gptpart";
+						device = "/dev/mmcblk0";
+						volume = "kernel-active";
+						noinuse = "true";
+						installed-directly = True;
+					},
+				);
+				scripts = (
+					{
+						filename = "prpl-backup.lua";
+						type = "lua";
+					},
+					{
+						filename = "prpl-enable-failover.lua";
+						type = "lua";
+					},
+				);
+			};
+		};
+	};
+};

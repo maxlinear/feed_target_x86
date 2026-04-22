@@ -1,0 +1,39 @@
+/dts-v1/;
+
+/ {
+	binman {
+		multiple-images;
+		image {
+			filename = "fullimage.itb";
+			fullimage: fit {
+				description = "Fullimage FIT";
+				label = "fullimage";
+				images {
+					kernel-dtb {
+						description = "MXL URX Linux kernel and DTB FIT Image";
+						data = /incbin/("kernel.itb");
+						type = "firmware";
+						os = "linux";
+						arch = "x86_64";
+						compression = "none";
+					};
+					filesystem {
+						description = "MXL URX Rootfs FIT image";
+						data = /incbin/("rootfs.itb");
+						type = "firmware";
+						arch = "x86_64";
+						compression = "none";
+					};
+				};
+				configurations {
+					default = "kernel-dtb-rootfs-conf";
+					kernel-dtb-rootfs-conf {
+						description = "MXL URX Linux kernel + DBT + rootfs";
+						kernel = "kernel-dtb";
+						filesystem = "filesystem";
+					};
+				};
+			};
+		};
+	};
+};
