@@ -3344,7 +3344,7 @@
 		compatible = "sysregister";
 		reg-names = "bootcount", "force-inactive";
 		reg = <0xe0040008 0x4>, <0xe0040008 0x4>;
-		bitmask = <0xe00000ff 0x10000>;
+		bitmask = <0xe00000ff>, <0x10000>;
 	};
 };
 

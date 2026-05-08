@@ -3,6 +3,50 @@ ifeq ($(SUBTARGET),lgm)
 DATE_FMT = +%y-%m-%d
 UIMAGE_NAME ?= $(shell date "$(DATE_FMT)")
 
+# Simple hook: copy to common name after secure initramfs is built and inject keys
+ifeq ($(CONFIG_INTEL_X86_SECBOOT),y)
+$(BIN_DIR)/secure-initramfs.cpio.gz: secure-initramfs
+	@echo "#### Copying secure-initramfs to common name"
+	@cp -f "$(BIN_DIR)/$(IMG_SECURE_INITRAMFS)" "$@.new"
+	@echo "#### Injecting keys into secure-initramfs"
+	@{ \
+		set -e; \
+		IMG_GEN_DIR=$$(find $(BUILD_DIR_BASE)/hostpkg -maxdepth 1 -type d -name "imagegenerator-*" | head -n 1); \
+		if [ -z "$$IMG_GEN_DIR" ]; then \
+			echo "ERROR: imagegenerator directory not found in $(BUILD_DIR_BASE)/hostpkg"; \
+			exit 1; \
+		fi; \
+		echo "Using imagegenerator at: $$IMG_GEN_DIR"; \
+		BUILD_DIR="$$IMG_GEN_DIR/build"; \
+		echo "Copying cpio to $$BUILD_DIR for script processing..."; \
+		cp -f "$@.new" "$$BUILD_DIR/$(IMG_SECURE_INITRAMFS)"; \
+		cd "$$IMG_GEN_DIR"; \
+		for script in build/scripts/pre-binman/100_initramfs*.sh build/scripts/pre-binman/200_initramfs*.sh; do \
+			if [ -f "$$script" ]; then \
+				echo "Running $$script to inject keys..."; \
+				bash "$$script"; \
+			else \
+				echo "Warning: $$script not found, skipping"; \
+			fi; \
+		done; \
+		echo "Copying modified cpio back..."; \
+		cp -f "$$BUILD_DIR/$(IMG_SECURE_INITRAMFS)" "$@.new"; \
+		rm -f "$$BUILD_DIR/$(IMG_SECURE_INITRAMFS)"; \
+		echo "#### Keys successfully injected into secure-initramfs"; \
+	}
+	@if cmp -s "$@.new" "$@"; then \
+		echo "#### secure-initramfs unchanged, skipping kernel rebuild"; \
+		rm -f "$@.new"; \
+	else \
+		echo "#### secure-initramfs changed, updating (will trigger kernel rebuild)"; \
+		mv -f "$@.new" "$@"; \
+	fi
+
+
+# Ensure the common name is created before kernel preparation
+kernel_prepare: $(BIN_DIR)/secure-initramfs.cpio.gz
+endif
+
 # Fakeroot conf
 FAKEROOT_PROG:=$(if $(CONFIG_PACKAGE_ugw-fakeroot), \
 	ALTPATH="$(STAGING_DIR_ROOT)" CONFFILE="$(STAGING_DIR_HOST)/share/fakeroot/fakeroot.conf" \
@@ -306,6 +350,12 @@ define Build/update-binman
 	#kernel image
 	dd if=$(IMAGE_KERNEL) of=$(IMAGE_KERNEL).fitimage bs=64 skip=1
 
+	#initramfs kernel image (strip mkimage header)
+	@if [ "$(CONFIG_TARGET_ROOTFS_INITRAMFS)" = "y" ]; then \
+		echo "Stripping header from initramfs kernel"; \
+		dd if=$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-initramfs-kernel.bin of=$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-initramfs-kernel.bin.fitimage bs=64 skip=1; \
+	fi
+
 	#dtb image signing and padding
 	$(CONFIG_INTEL_X86_SIGNTOOL) sign -type BLw -prikey $(CONFIG_INTEL_X86_PRIVATE_KEY) -wrapkey $(CONFIG_INTEL_X86_PROD_UNIQUE_KEY) -encattr -kdk -sm -secure \
 		-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x08100000 -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
@@ -319,12 +369,21 @@ define Build/update-binman
 	dd if=$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo.signed of=$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo bs=16 conv=sync;
 
 	@echo "Updating binman config"
-	sed -e 's@KERNEL@$(IMAGE_KERNEL).fitimage@g' \
-		-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
-		-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
-		-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
-		-e 's@version = ".*";@version = "$(VERSION)-$(TIMESTAMP)";@g' \
-		imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts
+	@if [ "$(CONFIG_TARGET_ROOTFS_INITRAMFS)" = "y" ]; then \
+		echo "Using initramfs kernel for FIT image"; \
+		sed -e 's@KERNEL@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-initramfs-kernel.bin.fitimage@g' \
+			-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
+			-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
+			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
+			imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts; \
+	else \
+		echo "Using regular kernel for FIT image"; \
+		sed -e 's@KERNEL@$(IMAGE_KERNEL).fitimage@g' \
+			-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
+			-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
+			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
+			imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts; \
+	fi
 endef
 define Build/update-sw-description
 	@echo "Updating sw-description file for $(1)"
@@ -397,9 +456,7 @@ endef
 
 define Build/update-script
 	@echo "Running Build/update-script"
-	mkimage -A x86_64 \
-		-O linux -T script -C none -a 0 -e 0 -n "update" -d update_script.txt \
-		$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-update_script.scr
+	mkimage -f update_script.its $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-update_script.itb
 endef
 
 define Build/generate-ext4fs
@@ -584,8 +641,8 @@ define Device/LGM_GENERIC
   IMAGE/kernel.bin := append-kernel
   IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | fit-rootfs | generate-ext4fs
   UIMAGE_NAME:=$(if $(UIMAGE_NAME),LGM-$(UIMAGE_NAME))
-  ARTIFACT/update_script.scr := update-script
-  ARTIFACTS += update_script.scr
+  ARTIFACT/update_script.itb := update-script
+  ARTIFACTS += update_script.itb
   IMG_GEN_DIR := $$(wildcard $$(BUILD_DIR_BASE)/hostpkg/imagegenerator-*)
 endef
 

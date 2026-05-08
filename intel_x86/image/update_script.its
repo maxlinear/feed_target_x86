@@ -1,0 +1,16 @@
+/dts-v1/;
+
+/ {
+	description = "FIT Image containing the upgrade script";
+
+	images {
+		update-script {
+			description = "Update script";
+			data = /incbin/("update_script.txt");
+			type = "script";
+			arch = "x86_64";
+			os = "u-boot";
+			compression = "none";
+		};
+	};
+};

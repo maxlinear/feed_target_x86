@@ -5,6 +5,9 @@
 # See /LICENSE for more information.
 #
 
+# Serialize image builds to prevent races on shared imagegenerator build directory
+.NOTPARALLEL:
+
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 include $(INCLUDE_DIR)/kernel-defaults.mk

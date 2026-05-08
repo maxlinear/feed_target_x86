@@ -1,6 +1,23 @@
 echo "=== prplOS mxl-ospv2 UPDATE ==="
 echo "Defining helper commands..."
 
+setenv u_boot_active_block_start     0x00014c00
+setenv u_boot_active_block_size      0x00000800
+
+setenv u_boot_inactive_block_start   0x00015400
+setenv u_boot_inactive_block_size    0x00000800
+
+setenv kernel-active_block_start     0x00015c00
+setenv kernel-active_block_size      0x00038000
+
+setenv kernel-inactive_block_start   0x0004dc00
+setenv kernel-inactive_block_size    0x00038000
+
+setenv mfgdata_block_start           0x00085c00
+setenv mfgdata_block_size            0x00001000
+
+setenv expected_gpt 'name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-active,size=1M;name=u-boot-inactive,size=1M;name=kernel-active,size=112M;name=kernel-inactive,size=112M;name=mfgdata,size=2M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;'
+
 # ---------------------------------------------------------------------------
 # Generic helpers (functions) for flashing
 # ---------------------------------------------------------------------------
@@ -10,6 +27,9 @@ setenv prpl_calc_blocks '
 setexpr cur_blocks ${filesize} + 0x1ff
 setexpr cur_blocks ${cur_blocks} / 0x200
 '
+
+# Check the GPT partitioning
+setenv check_gpt 'gpt verify mmc 0 ${expected_gpt}'
 
 # TFTP load: expects:
 #   cur_img  : image file name
@@ -95,7 +115,7 @@ fi
 echo "Defining update_prpl command..."
 
 setenv update_prpl '
-echo "=== prplOS UPDATE ==="
+echo "=== prplOS mxl-ospv2 UPDATE ==="
 
 # ---------------------------------------------------------------------------
 # 0. TFTP path default + status flags
@@ -111,27 +131,41 @@ if test -z "${update_rescue_bank}"; then
     setenv update_rescue_bank no
 fi
 
+# Check we have the expected GPT partitioning prior to flashing anything
+run check_gpt
+if test $? -ne 0; then
+    echo "ERROR: Current GPT partitioning does not match the expected one. Please make sure you migrated to prpl partitioning"
+    echo "More information at https://gitlab.com/prpl-foundation/prplos/prplos/-/wikis/Maxlinear-Open-Service-Platform/OSPv2#ospv2-updk-new-flashlayout-upgrade-steps"
+    setenv gpt_valid no
+else
+    setenv gpt_valid yes
+fi
+
 # Status flags for final summary
 setenv kernel_status skipped
 setenv uboot_status  skipped
+setenv rbe_status    skipped
 setenv smd_status    skipped
 
-echo "--------------------------------------------------"
-echo "TFTP path          : ${tftppath}"
-echo "Kernel             : ${img_kernel}"
-echo "U-Boot             : ${img_uboot}"
-echo "SMD image          : ${img_smd}"
-echo "Update rescue bank : ${update_rescue_bank}"
-echo "--------------------------------------------------"
-echo "Hint: set img_kernel / img_uboot / img_smd before running to flash them."
-echo "      Leave a variable unset/empty to skip that component."
-echo "      Set update_rescue_bank=yes to also update inactive banks."
-echo ""
+if test "${gpt_valid}" = "yes"; then
+    echo "--------------------------------------------------"
+    echo "TFTP path          : ${tftppath}"
+    echo "Kernel             : ${img_kernel}"
+    echo "U-Boot             : ${img_uboot}"
+    echo "RBE                : ${img_rbe}"
+    echo "SMD image          : ${img_smd}"
+    echo "Update rescue bank : ${update_rescue_bank}"
+    echo "--------------------------------------------------"
+    echo "Hint: set img_kernel / img_uboot / img_rbe / img_smd before running to flash them."
+    echo "      Leave a variable unset/empty to skip that component."
+    echo "      Set update_rescue_bank=yes to also update inactive banks."
+    echo ""
+fi
 
 # ---------------------------------------------------------------------------
 # 1. Flash image.ext4 (optional)
 # ---------------------------------------------------------------------------
-if test -n "${img_kernel}"; then
+if test -n "${img_kernel}" -a "${gpt_valid}" = "yes"; then
     setenv cur_img  ${img_kernel}
     setenv cur_desc image.ext4
 
@@ -155,13 +189,13 @@ if test -n "${img_kernel}"; then
         setenv kernel_status ${last_status}
     fi
 else
-    echo "Skipping kernel update (img_kernel not set)."
+    test "${gpt_valid}" = "yes" && echo "Skipping kernel update (img_kernel not set)."
 fi
 
 # ---------------------------------------------------------------------------
 # 2. Flash U-Boot → u-boot-active (optional)
 # ---------------------------------------------------------------------------
-if test -n "${img_uboot}"; then
+if test -n "${img_uboot}" -a "${gpt_valid}" = "yes"; then
     setenv cur_img  ${img_uboot}
     setenv cur_desc U-Boot
 
@@ -185,13 +219,50 @@ if test -n "${img_uboot}"; then
         setenv uboot_status ${last_status}
     fi
 else
-    echo "Skipping U-Boot update (img_uboot not set)."
+    test "${gpt_valid}" = "yes" && echo "Skipping U-Boot update (img_uboot not set)."
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Flash SMD → mfgdata (optional, no rescue bank)
+# 3. Flash RBE (optional)
 # ---------------------------------------------------------------------------
-if test -n "${img_smd}"; then
+if test -n "${img_rbe}" -a "${gpt_valid}" = "yes"; then
+    setenv cur_img  ${img_rbe}
+    setenv cur_desc RBE
+
+    run prpl_tftp_load
+    if test "${tftp_ok}" = "yes"; then
+        setenv flash_ok no
+
+        setenv select_partition primary
+        upgrade ${loadaddr} ${filesize}
+        if test $? -eq 0; then
+	    setenv select_partition secondary
+            upgrade ${loadaddr} ${filesize}
+            if test $? -eq 0; then
+	        setenv flash_ok yes
+	    else
+	        echo "ERROR: RBE upgrade failed on secondary partition"
+            fi
+	else
+	    echo "ERROR: RBE upgrade failed on primary partition"
+        fi
+
+        if test "${flash_ok}" = "yes"; then
+            setenv rbe_status flashed
+        else
+            setenv rbe_status mmc_error
+        fi
+    else
+        setenv rbe_status ${last_status}
+    fi
+else
+    test "${gpt_valid}" = "yes" && echo "Skipping RBE update (img_rbe not set)."
+fi
+
+# ---------------------------------------------------------------------------
+# 4. Flash SMD → mfgdata (optional, no rescue bank)
+# ---------------------------------------------------------------------------
+if test -n "${img_smd}" -a "${gpt_valid}" = "yes"; then
     setenv cur_img  ${img_smd}
     setenv cur_desc SMD
 
@@ -207,21 +278,24 @@ if test -n "${img_smd}"; then
         setenv smd_status ${last_status}
     fi
 else
-    echo "Skipping SMD/mfgdata update (img_smd not set)."
+    test "${gpt_valid}" = "yes" && echo "Skipping SMD/mfgdata update (img_smd not set)."
 fi
 
 # ---------------------------------------------------------------------------
 # 4. Final summary
 # ---------------------------------------------------------------------------
-echo "============================================"
-echo "          prplOS UPDATE SUMMARY             "
-echo "--------------------------------------------"
-echo "kernel (kernel-active) : ${kernel_status}"
-echo "U-Boot (u-boot-active) : ${uboot_status}"
-echo "SMD (mfgdata)          : ${smd_status}"
-echo "Update rescue bank     : ${update_rescue_bank}"
-echo "============================================"
-echo "Done. You can reset to reboot using the new FIT boot path."
+if test "${gpt_valid}" = "yes"; then
+    echo "============================================"
+    echo "          prplOS UPDATE SUMMARY             "
+    echo "--------------------------------------------"
+    echo "kernel (kernel-active) : ${kernel_status}"
+    echo "U-Boot (u-boot-active) : ${uboot_status}"
+    echo "RBE (rbe)              : ${rbe_status}"
+    echo "SMD (mfgdata)          : ${smd_status}"
+    echo "Update rescue bank     : ${update_rescue_bank}"
+    echo "============================================"
+    echo "Done. You can reset to reboot using the new FIT boot path."
+fi
 '
 
 echo "========================================================"
@@ -231,6 +305,7 @@ echo "Before running, you may set:"
 echo "  - tftppath            : TFTP directory (optional, default: root)"
 echo "  - img_uboot           : U-Boot image (optional)"
 echo "  - img_kernel          : itb file of the kernel (optional)"
+echo "  - img_rbe             : RBE image (optional)"
 echo "  - img_smd             : SMD/mfgdata image (optional)"
 echo "  - update_rescue_bank  : yes | no   (default: no)"
 echo ""
@@ -238,6 +313,7 @@ echo "Example:"
 echo "  setenv tftppath /images/"
 echo "  setenv img_uboot u-boot.itb"
 echo "  setenv img_kernel image.ext4"
+echo "  setenv img_rbe u-boot-spl-emmc.bin"
 echo "  setenv img_smd smd.bin"
 echo "  setenv update_rescue_bank yes"
 echo ""

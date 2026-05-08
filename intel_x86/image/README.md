@@ -9,7 +9,7 @@ This script updates **U-Boot, Kernel, RootFS, and mfgdata (SMD)** from **TFTP** 
 - U-Boot with: `mmc`, `tftpboot`, `setenv`, `setexpr`
 - eMMC available as: `mmc 0 0`
 - Block size: **512 bytes**
-- Correct GPT partition layout
+- Correct GPT partition layout (the script fails if a wrong GPT partitioning is detected)
 
 ---
 
@@ -49,11 +49,12 @@ saveenv
 Set before each update:
 
 ```bash
-setenv tftppath /images/       # optional
-setenv img_kernel kernel.itb   # optional
-setenv img_rootfs rootfs.itb   # optional
-setenv img_uboot  u-boot.itb   # optional
-setenv img_smd    smd.bin      # optional
+setenv tftppath /images/                # optional
+setenv img_kernel kernel.itb            # optional
+setenv img_rootfs rootfs.itb            # optional
+setenv img_uboot  u-boot.itb            # optional
+setenv img_rbe    u-boot-spl-emmc.bin   # optional
+setenv img_smd    smd.bin               # optional
 
 setenv update_rescue_bank yes # yes | no (default: no)
 ```
@@ -65,8 +66,8 @@ Unset any variable to **skip** that component.
 ## 4. How to Run
 
 ```bash
-tftpboot ${loadaddr} ${tftppath}update.scr
-source ${loadaddr}
+tftpboot ${loadaddr} ${tftppath}update.itb
+source ${loadaddr}:update-script
 run update_prpl
 ```
 
@@ -96,6 +97,7 @@ Printed at the end of execution:
 - Automatic block calculation
 - Optional rescue bank flashing
 - No erase/write from TFTP on MMC failure
+- Verify the GPT matches prpl defined partitioning prior to flashing any image
 
 ---
 
