@@ -16,7 +16,9 @@ setenv kernel-inactive_block_size    0x00038000
 setenv mfgdata_block_start           0x00085c00
 setenv mfgdata_block_size            0x00001000
 
-setenv expected_gpt 'name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-active,size=1M;name=u-boot-inactive,size=1M;name=kernel-active,size=112M;name=kernel-inactive,size=112M;name=mfgdata,size=2M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;'
+setenv expected_gpt_a 'name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-active,size=1M;name=u-boot-inactive,size=1M;name=kernel-active,size=112M;name=kernel-inactive,size=112M;name=mfgdata,size=2M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;'
+
+setenv expected_gpt_b 'name=tep-active,start=512k,size=2M;name=tep-inactive,size=2M;name=env_a,size=512k;name=env_b,size=512k;name=securestore_a,size=16M;name=securestore_b,size=16M;name=calibration_a,size=2M;name=calibration_b,size=2M;name=u-boot-inactive,size=1M;name=u-boot-active,size=1M;name=kernel-inactive,size=112M;name=kernel-active,size=112M;name=mfgdata,size=2M;name=rootfs_data,size=32M;name=log_partition,size=32M;name=lcm_data,size=3G;'
 
 # ---------------------------------------------------------------------------
 # Generic helpers (functions) for flashing
@@ -29,7 +31,8 @@ setexpr cur_blocks ${cur_blocks} / 0x200
 '
 
 # Check the GPT partitioning
-setenv check_gpt 'gpt verify mmc 0 ${expected_gpt}'
+setenv check_gpt_a 'gpt verify mmc 0 ${expected_gpt_a}'
+setenv check_gpt_b 'gpt verify mmc 0 ${expected_gpt_b}'
 
 # TFTP load: expects:
 #   cur_img  : image file name
@@ -132,13 +135,18 @@ if test -z "${update_rescue_bank}"; then
 fi
 
 # Check we have the expected GPT partitioning prior to flashing anything
-run check_gpt
-if test $? -ne 0; then
-    echo "ERROR: Current GPT partitioning does not match the expected one. Please make sure you migrated to prpl partitioning"
-    echo "More information at https://gitlab.com/prpl-foundation/prplos/prplos/-/wikis/Maxlinear-Open-Service-Platform/OSPv2#ospv2-updk-new-flashlayout-upgrade-steps"
-    setenv gpt_valid no
-else
+run check_gpt_a
+if test $? -eq 0; then
     setenv gpt_valid yes
+else
+    run check_gpt_b
+    if test $? -eq 0; then
+        setenv gpt_valid yes
+    else
+	echo "ERROR: Current GPT partitioning does not match expected layouts. Please make sure you migrated to prpl partitioning"
+	echo "More information at https://gitlab.com/prpl-foundation/prplos/prplos/-/wikis/Maxlinear-Open-Service-Platform/OSPv2#ospv2-updk-new-flashlayout-upgrade-steps"
+        setenv gpt_valid no
+    fi
 fi
 
 # Status flags for final summary
