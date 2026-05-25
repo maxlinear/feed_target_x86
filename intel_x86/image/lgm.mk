@@ -404,6 +404,8 @@ define Build/update-binman
 	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 
+	gzip -f -9n -c $(KDIR)/vmlinux > $(IMG_GEN_DIR)/build/vmlinux.gz
+
 	#strip the header from rbe.
 	dd if=$(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin of=$(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin.stripped bs=64 skip=1
 	mv -vf $(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin.stripped $(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin
@@ -620,13 +622,6 @@ define Device/Build
   $$(eval $$(foreach image,$$(IMAGES), \
     $$(call Device/Build/image-non-rootfs,$$(image),$(1))))
 
-#  $$(eval $$(foreach image,$$(FULLIMAGES), \
-#    $$(call Device/Build/fitimage,$$(image),$(1))))
-
-  $$(eval $$(foreach image,$$(SINGLE_FULLIMAGE), \
-    $$(call Device/Build/singledtb,$$(image),$(1)) \
-    $$(call Device/Build/singlefitimage,$$(image),$(1))))
-
   $$(eval $$(foreach artifact,$$(ARTIFACTS), \
     $$(call Device/Build/artifact,$$(artifact),$(1))))
 
@@ -639,7 +634,7 @@ define Device/LGM_GENERIC
   KERNEL_INITRAMFS := kernel-bin | gzip | uImage-x86_64 gzip
   DEVICE_DTS_DIR := ../dts
   IMAGE/kernel.bin := append-kernel
-  IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | fit-rootfs | generate-ext4fs
+  IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | generate-ext4fs
   UIMAGE_NAME:=$(if $(UIMAGE_NAME),LGM-$(UIMAGE_NAME))
   ARTIFACT/update_script.itb := update-script
   ARTIFACTS += update_script.itb
@@ -666,7 +661,6 @@ define Device/SWUPDATE_INIT
   BINMAN_INPUT_$(1) := $$(KDIR)/$(4)/u-boot-*/u-boot.lzimg \
 		$$(KDIR)/$(4)/u-boot-*/spl/u-boot-spl-emmc.bin \
 		$$(KDIR)/tep_fw-*/tep_fw.bin \
-		$$(KDIR)/vmlinux.gz \
 		$$(KDIR)/tmp/$$(DEVICE_IMG_PREFIX)-$(3) \
 		$$(KDIR)/tmp/$$(DEVICE_IMG_PREFIX)-overlay.dtbo \
 		$$(BIN_DIR)/$(IMG_PREFIX)-secure-initramfs.cpio.gz \
@@ -1038,31 +1032,13 @@ define Device/PRPL_OSP_v2
   DEVICE_TITLE := LGM Model for prplOS osp v2(a and b step)
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/tb341_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
-  IMAGE/tb341_wav700_pon.dtb := dtb osp_tb341_v2_wav700_pon
-  IMAGE/tb341_wav700.dtb := dtb osp_tb341_v2_wav700_eth
   IMAGE/wgrtd159be_b_wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-  IMAGE/wgrtd159be_b_wav700_pon.dtb := dtb osp_wgrtd159be_b_v2_wav700_pon
-  IMAGE/wgrtd159be_b_wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-  IMAGE/tb341_wav700_eth_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb
-  IMAGE/tb341_wav700_pon_fullimage.img := fullimage 16 squashfs tb341_wav700_pon.dtb
-  IMAGE/tb341_wav700_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb tb341_wav700.dtb
-  IMAGE/wgrtd159be_b_wav700_eth_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb
-  IMAGE/wgrtd159be_b_wav700_pon_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_pon.dtb
-  IMAGE/wgrtd159be_b_wav700_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb wgrtd159be_b_wav700.dtb
   $(call Device/SWUPDATE_INIT,tb341_wav700,ospv2,tb341_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl)
   $(call Device/SWUPDATE_INIT,wgrtd159be_b_wav700,ospv2,wgrtd159be_b_wav700_eth.dtb,octopus-urx641-4GB-ddr-overlay-fit-p34x-phy-emmc-prpl)
   IMAGES += kernel.bin \
 		overlay.dtbo \
 		tb341_wav700_eth.dtb \
-		tb341_wav700_pon.dtb \
-		wgrtd159be_b_wav700_eth.dtb \
-		wgrtd159be_b_wav700_pon.dtb
-  FULLIMAGES := tb341_wav700_eth_fullimage.img \
-		tb341_wav700_pon_fullimage.img  \
-		wgrtd159be_b_wav700_eth_fullimage.img \
-		wgrtd159be_b_wav700_pon_fullimage.img
-  SINGLE_FULLIMAGE := tb341_wav700_fullimage.img \
-		wgrtd159be_b_wav700_fullimage.img
+		wgrtd159be_b_wav700_eth.dtb
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -1090,17 +1066,7 @@ define Device/PRPL_MB_URX
   DEVICE_TITLE := LGM CBSP B-Step Model for prplos
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
-  IMAGE/641_wav700_pon.dtb := dtb octopus_641_wav700_pon
   IMAGE/851_wav700_eth.dtb := dtb octopus_851_wav700_eth
-  IMAGE/851_wav700_pon.dtb := dtb octopus_851_wav700_pon
-  IMAGE/641_wav700.dtb := dtb octopus_641_wav700_eth
-  IMAGE/851_wav700.dtb := dtb octopus_851_wav700_eth
-  IMAGE/641_wav700_eth_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb
-  IMAGE/641_wav700_pon_fullimage.img := fullimage 16 squashfs 641_wav700_pon.dtb
-  IMAGE/851_wav700_eth_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb
-  IMAGE/851_wav700_pon_fullimage.img := fullimage 16 squashfs 851_wav700_pon.dtb
-  IMAGE/641_wav700_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb 641_wav700.dtb
-  IMAGE/851_wav700_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb 851_wav700.dtb
   $(if $(CONFIG_INTEL_X86_SECBOOT),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-sec-overlay-fit-p34x-phy-emmc-prpl),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl))
@@ -1110,15 +1076,7 @@ define Device/PRPL_MB_URX
   IMAGES += kernel.bin \
 		overlay.dtbo \
 		641_wav700_eth.dtb \
-		641_wav700_pon.dtb \
-		851_wav700_eth.dtb \
-		851_wav700_pon.dtb
-  FULLIMAGES := 641_wav700_eth_fullimage.img \
-		641_wav700_pon_fullimage.img \
-		851_wav700_eth_fullimage.img \
-		851_wav700_pon_fullimage.img
-  SINGLE_FULLIMAGE := 641_wav700_fullimage.img \
-		851_wav700_fullimage.img
+		851_wav700_eth.dtb
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
