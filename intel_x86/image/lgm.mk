@@ -375,6 +375,8 @@ define Build/update-binman
 			-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
 			-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
 			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
+			-e 's@version = ".*";@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+			-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 			imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts; \
 	else \
 		echo "Using regular kernel for FIT image"; \
@@ -382,12 +384,15 @@ define Build/update-binman
 			-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
 			-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
 			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
+			-e 's@version = ".*";@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+			-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 			imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts; \
 	fi
 endef
 define Build/update-sw-description
 	@echo "Updating sw-description file for $(1)"
 	sed -e 's@board_name@$(1)@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 		imagegenerator/configs/swugenerator/sw-description-sec-config > $(IMG_GEN_DIR)/build/sw-description-config
 endef
 define Build/build-fullimage
@@ -411,17 +416,18 @@ define Build/update-binman
 	mv -vf $(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin.stripped $(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin
 
 	@echo "Updating binman config"
-	sed -e 's@KERNEL@$(IMG_GEN_DIR)/build/vmlinux.gz@g' \
-		-e 's@INITRAMFS@$(IMG_GEN_DIR)/build/$(IMG_PREFIX)-secure-initramfs.cpio.gz@g' \
+	sed -e 's@INITRAMFS@$(IMG_GEN_DIR)/build/$(IMG_PREFIX)-secure-initramfs.cpio.gz@g' \
 		-e 's@DTB@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-$(1)@g' \
 		-e 's@OVERLAY@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
 		-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
 		-e 's@version = ".*";@version = "$(VERSION)-$(TIMESTAMP)";@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 		imagegenerator/configs/binman/binman-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts
 endef
 define Build/update-sw-description
 	@echo "Updating sw-description file for $(1)"
 	sed -e 's@board_name@$(1)@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 		imagegenerator/configs/swugenerator/sw-description-config > $(IMG_GEN_DIR)/build/sw-description-config
 endef
 define Build/build-fullimage

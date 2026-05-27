@@ -5,7 +5,7 @@
 software =
 {
 	description = "Firmware update for Prpl opensource Project";
-	version = "1.0.0";
+	version = PRPLOS_VERSION;
 	hardware-compatibility:
 	[
 		"#RE:.*"

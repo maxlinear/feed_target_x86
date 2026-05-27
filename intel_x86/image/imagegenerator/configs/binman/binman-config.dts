@@ -18,6 +18,7 @@
 			filename = "u-boot.itb";
 			uboot: fit {
 				description = "U-Boot FIT";
+				version = PRPLOS_VERSION;
 				label = "u-boot";
 				images {
 					u-boot {
@@ -39,7 +40,7 @@
 					config-0 {
 						description = "MxL U-Boot with device tree blob";
 						firmware = "u-boot";
-						version = "UPDK-9.x";
+						version = "UPDK-9.2.10";
 					};
 				};
 			};
@@ -56,6 +57,7 @@
 			};
 			kernel: fit {
 				description = "Kernel FIT";
+				version = PRPLOS_VERSION;
 				label = "kernel";
 				fit,external-offset = <0x1000>;
 				images {
@@ -113,14 +115,14 @@
 						kernel = "kernel-1";
 						ramdisk = "initrd-1";
 						fdt = "fdt-1";
-						version = "UPDK-9.x";
+						version = "UPDK-9.2.10";
 					};
 					kernel-pon-config {
 						description = "MXL Linux kernel with device tree blob for PON";
 						kernel = "kernel-1";
 						ramdisk = "initrd-1";
 						fdt = "fdt-1", "fdt-2";
-						version = "UPDK-9.x";
+						version = "UPDK-9.2.10";
 					};
 				};
 			};
@@ -159,7 +161,7 @@
 					nominal {
 						description = "MXL rootfs";
 						rootfs = "rootfs";
-						version = "UPDK-9.x";
+						version = "UPDK-9.2.10";
 					};
 				};
 			};
