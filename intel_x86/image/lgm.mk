@@ -18,10 +18,11 @@ $(BIN_DIR)/secure-initramfs.cpio.gz: secure-initramfs
 		fi; \
 		echo "Using imagegenerator at: $$IMG_GEN_DIR"; \
 		BUILD_DIR="$$IMG_GEN_DIR/build"; \
+		mkdir -p "$$BUILD_DIR"; \
 		echo "Copying cpio to $$BUILD_DIR for script processing..."; \
 		cp -f "$@.new" "$$BUILD_DIR/$(IMG_SECURE_INITRAMFS)"; \
 		cd "$$IMG_GEN_DIR"; \
-		for script in build/scripts/pre-binman/100_initramfs*.sh build/scripts/pre-binman/200_initramfs*.sh; do \
+		for script in scripts/pre-binman/100_initramfs*.sh scripts/pre-binman/200_initramfs*.sh; do \
 			if [ -f "$$script" ]; then \
 				echo "Running $$script to inject keys..."; \
 				bash "$$script"; \
@@ -34,13 +35,15 @@ $(BIN_DIR)/secure-initramfs.cpio.gz: secure-initramfs
 		rm -f "$$BUILD_DIR/$(IMG_SECURE_INITRAMFS)"; \
 		echo "#### Keys successfully injected into secure-initramfs"; \
 	}
-	@if cmp -s "$@.new" "$@"; then \
-		echo "#### secure-initramfs unchanged, skipping kernel rebuild"; \
-		rm -f "$@.new"; \
-	else \
-		echo "#### secure-initramfs changed, updating (will trigger kernel rebuild)"; \
-		mv -f "$@.new" "$@"; \
-	fi
+	#@if cmp -s "$@.new" "$@"; then \
+	#	echo "#### secure-initramfs unchanged, skipping kernel rebuild"; \
+	#	rm -f "$@.new"; \
+	#else \
+	#	echo "#### secure-initramfs changed, updating (will trigger kernel rebuild)"; \
+	#	mv -f "$@.new" "$@"; \
+	#fi
+	@echo "#### Updating secure-initramfs (optimization disabled for debug)"
+	@mv -f "$@.new" "$@"
 
 
 # Ensure the common name is created before kernel preparation
@@ -628,8 +631,12 @@ define Device/Build
   $$(eval $$(foreach image,$$(IMAGES), \
     $$(call Device/Build/image-non-rootfs,$$(image),$(1))))
 
-  $$(eval $$(foreach artifact,$$(ARTIFACTS), \
-    $$(call Device/Build/artifact,$$(artifact),$(1))))
+  $$(eval $$(foreach image,$$(SINGLE_FULLIMAGE), \
+    $$(call Device/Build/singledtb,$$(image),$(1)) \
+    $$(call Device/Build/singlefitimage,$$(image),$(1))))
+
+#   $$(eval $$(foreach artifact,$$(ARTIFACTS), \
+#     $$(call Device/Build/artifact,$$(artifact),$(1))))
 
 endef
 
@@ -637,10 +644,10 @@ define Device/LGM_GENERIC
   KERNEL_LOADADDR := 0x2000000
   KERNEL_ENTRY := 0x2000000
   KERNEL := kernel-bin | gzip | uImage-x86_64 gzip | pad-offset 16 0
-  KERNEL_INITRAMFS := kernel-bin | gzip | uImage-x86_64 gzip
+  KERNEL_INITRAMFS := kernel-bin | gzip | uImage-x86_64 gzip | pad-offset 16 0
   DEVICE_DTS_DIR := ../dts
   IMAGE/kernel.bin := append-kernel
-  IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | generate-ext4fs
+  IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | fit-rootfs | generate-ext4fs
   UIMAGE_NAME:=$(if $(UIMAGE_NAME),LGM-$(UIMAGE_NAME))
   ARTIFACT/update_script.itb := update-script
   ARTIFACTS += update_script.itb
@@ -664,6 +671,7 @@ endef
 #   $(3) - DTB filename.
 #   $(4) - U-Boot directory name.
 define Device/SWUPDATE_INIT
+  $(if $(wildcard $(KDIR)/$(4)),\
   BINMAN_INPUT_$(1) := $$(KDIR)/$(4)/u-boot-*/u-boot.lzimg \
 		$$(KDIR)/$(4)/u-boot-*/spl/u-boot-spl-emmc.bin \
 		$$(KDIR)/tep_fw-*/tep_fw.bin \
@@ -679,7 +687,7 @@ define Device/SWUPDATE_INIT
 		update-sw-description $(2) | \
 		swugenerator sw-description-config | \
 		custom $(1) $(4)
-  ARTIFACTS += $(1)-image.swu
+  ARTIFACTS += $(1)-image.swu)
 endef
 
 define Device/CBSP_B0
@@ -1038,13 +1046,21 @@ define Device/PRPL_OSP_v2
   DEVICE_TITLE := LGM Model for prplOS osp v2(a and b step)
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/tb341_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
+  IMAGE/tb341_wav700.dtb := dtb osp_tb341_v2_wav700_eth
   IMAGE/wgrtd159be_b_wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
+  IMAGE/wgrtd159be_b_wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
+  IMAGE/tb341_wav700_eth_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb
+  IMAGE/tb341_wav700_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb tb341_wav700.dtb
+  IMAGE/wgrtd159be_b_wav700_eth_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb
+  IMAGE/wgrtd159be_b_wav700_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb wgrtd159be_b_wav700.dtb
   $(call Device/SWUPDATE_INIT,tb341_wav700,ospv2,tb341_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl)
   $(call Device/SWUPDATE_INIT,wgrtd159be_b_wav700,ospv2,wgrtd159be_b_wav700_eth.dtb,octopus-urx641-4GB-ddr-overlay-fit-p34x-phy-emmc-prpl)
   IMAGES += kernel.bin \
 		overlay.dtbo \
 		tb341_wav700_eth.dtb \
 		wgrtd159be_b_wav700_eth.dtb
+  SINGLE_FULLIMAGE := tb341_wav700_fullimage.img \
+		wgrtd159be_b_wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -1073,6 +1089,12 @@ define Device/PRPL_MB_URX
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
   IMAGE/851_wav700_eth.dtb := dtb octopus_851_wav700_eth
+  IMAGE/641_wav700.dtb := dtb octopus_641_wav700_eth
+  IMAGE/851_wav700.dtb := dtb octopus_851_wav700_eth
+  IMAGE/641_wav700_eth_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb
+  IMAGE/851_wav700_eth_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb
+  IMAGE/641_wav700_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb 641_wav700.dtb
+  IMAGE/851_wav700_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb 851_wav700.dtb
   $(if $(CONFIG_INTEL_X86_SECBOOT),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-sec-overlay-fit-p34x-phy-emmc-prpl),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl))
@@ -1083,6 +1105,8 @@ define Device/PRPL_MB_URX
 		overlay.dtbo \
 		641_wav700_eth.dtb \
 		851_wav700_eth.dtb
+  SINGLE_FULLIMAGE := 641_wav700_fullimage.img \
+		851_wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
