@@ -56,6 +56,11 @@ menuconfig INTEL_X86_SECBOOT
 			CRkey (Confidentiality Root Key) with optional Certificate
 			support and path
 
+config INTEL_X86_MXL_SWU_IMAGE
+	bool "Build SWU (Software Update) image for Maxlinear platform"
+	help
+		Builds SWU (Software Update) image for Maxlinear platform.
+
 config OSP_TB341_v1_PON_OVERLAY
 	bool "OSP-v1 PON DTS changes for single image"
 	help

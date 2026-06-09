@@ -334,13 +334,16 @@ define Build/update-binman
 	mkdir -p $(BIN_DIR)/non_signed_image
 	cp -vf $(IMAGE_KERNEL) $(BIN_DIR)/non_signed_image/
 endef
-define Build/binman
-	echo "" > /dev/null
-endef
 define Build/update-sw-description
 	echo "" > /dev/null
 endef
+define Build/binman
+	echo "" > /dev/null
+endef
 define Build/swugenerator
+	echo "" > /dev/null
+endef
+define Build/swugenerator-mxl
 	echo "" > /dev/null
 endef
 define Build/build-fullimage
@@ -398,6 +401,26 @@ define Build/update-sw-description
 		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 		imagegenerator/configs/swugenerator/sw-description-sec-config > $(IMG_GEN_DIR)/build/sw-description-config
 endef
+
+# func: swugenerator-mxl
+# Generates Total SWU image and Full SWU image.
+# Total SWU image contains the RBE, U-Boot, TEP firmware (for secureboot), kernel, dtb and rootfs in a single swu file.
+# Full SWU image contains the kernel, dtb and rootfs in a single swu file.
+
+define Build/swugenerator-mxl
+	sed -e 's@board_name@$(1)@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
+		imagegenerator/configs/swugenerator/sw-description-sec-config-total > $(IMG_GEN_DIR)/build/sw-description-config
+	ln -sf sw-description-config $(IMG_GEN_DIR)/build/sw-description
+	cd $(IMG_GEN_DIR) && ./scripts/gen_swu.sh
+	cp $(IMG_GEN_DIR)/build/image.swu $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-totalimage.swu
+	sed -e 's@board_name@$(1)@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
+		imagegenerator/configs/swugenerator/sw-description-sec-config-full > $(IMG_GEN_DIR)/build/sw-description-config
+	ln -sf sw-description-config $(IMG_GEN_DIR)/build/sw-description
+	cd $(IMG_GEN_DIR) && ./scripts/gen_swu.sh
+	cp $(IMG_GEN_DIR)/build/image.swu $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-fullimage.swu
+endef
 define Build/build-fullimage
 	@echo "Building fullimage for $(1) with binman"
 	cp -vf imagegenerator/configs/binman/binman-fullimage.dts $(IMG_GEN_DIR)/build/
@@ -433,13 +456,34 @@ define Build/update-sw-description
 		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 		imagegenerator/configs/swugenerator/sw-description-config > $(IMG_GEN_DIR)/build/sw-description-config
 endef
+
+# func: swugenerator-mxl
+# Generates Total SWU image and Full SWU image.
+# Total SWU image contains the RBE, U-Boot, TEP firmware (for secureboot), kernel, dtb and rootfs in a single swu file.
+# Full SWU image contains the kernel, dtb and rootfs in a single swu file.
+
+define Build/swugenerator-mxl
+	sed -e 's@board_name@$(1)@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
+		imagegenerator/configs/swugenerator/sw-description-config-total > $(IMG_GEN_DIR)/build/sw-description-config
+	ln -sf sw-description-config $(IMG_GEN_DIR)/build/sw-description
+	cd $(IMG_GEN_DIR) && ./scripts/gen_swu.sh
+	cp $(IMG_GEN_DIR)/build/image.swu $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-totalimage.swu
+	sed -e 's@board_name@$(1)@g' \
+		-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
+		imagegenerator/configs/swugenerator/sw-description-config-full > $(IMG_GEN_DIR)/build/sw-description-config
+	ln -sf sw-description-config $(IMG_GEN_DIR)/build/sw-description
+	cd $(IMG_GEN_DIR) && ./scripts/gen_swu.sh
+	cp $(IMG_GEN_DIR)/build/image.swu $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-fullimage.swu
+endef
 define Build/build-fullimage
-	@echo "Building fullimage for $(1) with binman"
-	cp -vf imagegenerator/configs/binman/binman-fullimage.dts $(IMG_GEN_DIR)/build/
-	cp -vf imagegenerator/scripts/gen_binman_fullimage.sh $(IMG_GEN_DIR)/scripts/
-	cd $(IMG_GEN_DIR) && ./scripts/gen_binman_fullimage.sh
-	cp -vf $(IMG_GEN_DIR)/build/fullimage.itb $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage.itb
-	cp -vf $(IMG_GEN_DIR)/build/fullimage.itb $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage.itb
+	$(if $(findstring 10g,$(1)),@echo "Skipping fullimage for $(1) (10g target)",\
+	@echo "Building fullimage for $(1) with binman" && \
+	cp -vf imagegenerator/configs/binman/binman-fullimage.dts $(IMG_GEN_DIR)/build/ && \
+	cp -vf imagegenerator/scripts/gen_binman_fullimage.sh $(IMG_GEN_DIR)/scripts/ && \
+	cd $(IMG_GEN_DIR) && ./scripts/gen_binman_fullimage.sh && \
+	cp -vf $(IMG_GEN_DIR)/build/fullimage.itb $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage.itb && \
+	cp -vf $(IMG_GEN_DIR)/build/fullimage.itb $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage.itb)
 endef
 endif
 
@@ -450,18 +494,25 @@ define Build/custom
 	if [ -f $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-u-boot.itb ] ; then \
 		mv -vf $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-u-boot.itb $(BIN_DIR)/uboot-$(uboot)/u-boot.itb ; \
 	fi
-	if [ -f $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-kernel.itb ] ; then \
-		mv -vf $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-kernel.itb $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(board)-kernel.itb ; \
+	if [ -f $(IMG_GEN_DIR)/build/tep_fw.itb ] ; then \
+		cp -vf $(IMG_GEN_DIR)/build/tep_fw.itb $(BIN_DIR)/tep_fw.itb; \
+	fi
+	if [ -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-totalimage.swu ] ; then \
+		cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-totalimage.swu $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(board)-totalimage.swu ; \
+	fi
+	if [ -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-fullimage.swu ] ; then \
+		cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-fullimage.swu $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(board)-fullimage.swu ; \
 	fi
 	if [ -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-image.swu ] ; then \
 		cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-image.swu $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(board)-image.swu ; \
 	fi
+	$(if $(findstring 10g,$(board)),,\
+	if [ -f $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-kernel.itb ] ; then \
+		mv -vf $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-kernel.itb $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(board)-kernel.itb ; \
+	fi ; \
 	if [ -f $(IMG_GEN_DIR)/build/ext4.img ] ; then \
 		cp -vf $(IMG_GEN_DIR)/build/ext4.img $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(board)-ext4.img ; \
-	fi
-	if [ -f $(IMG_GEN_DIR)/build/tep_fw.itb ] ; then \
-		cp -vf $(IMG_GEN_DIR)/build/tep_fw.itb $(BIN_DIR)/tep_fw.itb; \
-	fi
+	fi)
 
 endef
 
@@ -631,12 +682,8 @@ define Device/Build
   $$(eval $$(foreach image,$$(IMAGES), \
     $$(call Device/Build/image-non-rootfs,$$(image),$(1))))
 
-  $$(eval $$(foreach image,$$(SINGLE_FULLIMAGE), \
-    $$(call Device/Build/singledtb,$$(image),$(1)) \
-    $$(call Device/Build/singlefitimage,$$(image),$(1))))
-
-#   $$(eval $$(foreach artifact,$$(ARTIFACTS), \
-#     $$(call Device/Build/artifact,$$(artifact),$(1))))
+  $$(eval $$(foreach artifact,$$(ARTIFACTS), \
+    $$(call Device/Build/artifact,$$(artifact),$(1))))
 
 endef
 
@@ -647,7 +694,7 @@ define Device/LGM_GENERIC
   KERNEL_INITRAMFS := kernel-bin | gzip | uImage-x86_64 gzip | pad-offset 16 0
   DEVICE_DTS_DIR := ../dts
   IMAGE/kernel.bin := append-kernel
-  IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | fit-rootfs | generate-ext4fs
+  IMAGE/fs.rootfs := append-rootfs  | sign-rootfs | generate-ext4fs
   UIMAGE_NAME:=$(if $(UIMAGE_NAME),LGM-$(UIMAGE_NAME))
   ARTIFACT/update_script.itb := update-script
   ARTIFACTS += update_script.itb
@@ -686,6 +733,7 @@ define Device/SWUPDATE_INIT
 		build-fullimage $(1) | \
 		update-sw-description $(2) | \
 		swugenerator sw-description-config | \
+		$(if $(CONFIG_INTEL_X86_MXL_SWU_IMAGE),swugenerator-mxl $(2) |) \
 		custom $(1) $(4)
   ARTIFACTS += $(1)-image.swu)
 endef
@@ -1046,21 +1094,13 @@ define Device/PRPL_OSP_v2
   DEVICE_TITLE := LGM Model for prplOS osp v2(a and b step)
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/tb341_wav700_eth.dtb := dtb osp_tb341_v2_wav700_eth
-  IMAGE/tb341_wav700.dtb := dtb osp_tb341_v2_wav700_eth
   IMAGE/wgrtd159be_b_wav700_eth.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-  IMAGE/wgrtd159be_b_wav700.dtb := dtb osp_wgrtd159be_b_v2_wav700_eth
-  IMAGE/tb341_wav700_eth_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb
-  IMAGE/tb341_wav700_fullimage.img := fullimage 16 squashfs tb341_wav700_eth.dtb tb341_wav700.dtb
-  IMAGE/wgrtd159be_b_wav700_eth_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb
-  IMAGE/wgrtd159be_b_wav700_fullimage.img := fullimage 16 squashfs wgrtd159be_b_wav700_eth.dtb wgrtd159be_b_wav700.dtb
   $(call Device/SWUPDATE_INIT,tb341_wav700,ospv2,tb341_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl)
   $(call Device/SWUPDATE_INIT,wgrtd159be_b_wav700,ospv2,wgrtd159be_b_wav700_eth.dtb,octopus-urx641-4GB-ddr-overlay-fit-p34x-phy-emmc-prpl)
   IMAGES += kernel.bin \
 		overlay.dtbo \
 		tb341_wav700_eth.dtb \
 		wgrtd159be_b_wav700_eth.dtb
-  SINGLE_FULLIMAGE := tb341_wav700_fullimage.img \
-		wgrtd159be_b_wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
@@ -1089,12 +1129,6 @@ define Device/PRPL_MB_URX
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
   IMAGE/851_wav700_eth.dtb := dtb octopus_851_wav700_eth
-  IMAGE/641_wav700.dtb := dtb octopus_641_wav700_eth
-  IMAGE/851_wav700.dtb := dtb octopus_851_wav700_eth
-  IMAGE/641_wav700_eth_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb
-  IMAGE/851_wav700_eth_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb
-  IMAGE/641_wav700_fullimage.img := fullimage 16 squashfs 641_wav700_eth.dtb 641_wav700.dtb
-  IMAGE/851_wav700_fullimage.img := fullimage 16 squashfs 851_wav700_eth.dtb 851_wav700.dtb
   $(if $(CONFIG_INTEL_X86_SECBOOT),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-sec-overlay-fit-p34x-phy-emmc-prpl),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl))
@@ -1105,8 +1139,6 @@ define Device/PRPL_MB_URX
 		overlay.dtbo \
 		641_wav700_eth.dtb \
 		851_wav700_eth.dtb
-  SINGLE_FULLIMAGE := 641_wav700_fullimage.img \
-		851_wav700_fullimage.img
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\

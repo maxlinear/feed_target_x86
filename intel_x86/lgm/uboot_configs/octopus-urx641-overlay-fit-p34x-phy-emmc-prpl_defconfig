@@ -153,12 +153,12 @@ CONFIG_STACK_SIZE=0x2000000
 CONFIG_SYS_SRAM_BASE=0x0
 CONFIG_SYS_SRAM_SIZE=0x0
 CONFIG_FIT=y
-# CONFIG_FIT_SIGNATURE is not set
-# CONFIG_FIT_RSASSA_PSS is not set
+CONFIG_FIT_SIGNATURE=y
+CONFIG_FIT_RSASSA_PSS=y
 CONFIG_MXL_SPL_FIT=y
 CONFIG_LEGACY_IMAGE_FORMAT=y
-# CONFIG_OF_BOARD_FIXUP is not set
-# CONFIG_OF_BOARD_SETUP is not set
+CONFIG_OF_BOARD_FIXUP=y
+CONFIG_OF_BOARD_SETUP=y
 CONFIG_SYS_EXTRA_OPTIONS=""
 CONFIG_HAVE_SYS_TEXT_BASE=y
 CONFIG_ARCH_FIXUP_FDT_MEMORY=y
@@ -188,7 +188,7 @@ CONFIG_AUTO_COMPLETE=y
 CONFIG_SYS_LONGHELP=y
 CONFIG_SYS_PROMPT="=> "
 CONFIG_CMD_BOOTM=y
-# CONFIG_CMD_BOOTM_PRE_LOAD is not set
+CONFIG_CMD_BOOTM_PRE_LOAD=y
 CONFIG_CMD_LOADB=y
 # CONFIG_CMD_BOOTD is not set
 # CONFIG_BOOTM_PLAN9 is not set
@@ -231,15 +231,15 @@ CONFIG_PYLIBFDT=y
 CONFIG_OF_CONTROL=y
 CONFIG_OF_REAL=y
 CONFIG_SPL_OF_CONTROL=y
-CONFIG_OF_EMBED=y
-# CONFIG_OF_SEPARATE is not set
+# CONFIG_OF_EMBED is not set
+CONFIG_OF_SEPARATE=y
 CONFIG_OF_SPL_REMOVE_PROPS="clocks clock-names interrupt-parent interrupts"
 CONFIG_SPL_OF_REAL=y
 CONFIG_ENV_SUPPORT=y
 CONFIG_SAVEENV=y
 CONFIG_ENV_IS_IN_MMC=y
-# CONFIG_ENV_WRITEABLE_LIST is not set
-# CONFIG_ENV_ACCESS_IGNORE_FORCE is not set
+CONFIG_ENV_WRITEABLE_LIST=y
+CONFIG_ENV_ACCESS_IGNORE_FORCE=y
 CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
 CONFIG_ENV_OFFSET=0x480000
 CONFIG_ENV_OFFSET_REDUND=0x500000
@@ -261,7 +261,7 @@ CONFIG_OF_TRANSLATE=y
 # CONFIG_SPL_OF_TRANSLATE is not set
 # CONFIG_TRANSLATION_OFFSET is not set
 CONFIG_DM_DEV_READ_INLINE=y
-# CONFIG_GETOPT is not set
+CONFIG_GETOPT=y
 #
 # Bus devices
 #
@@ -324,19 +324,19 @@ CONFIG_LIB_RAND=y
 
 # Security support
 #
-# CONFIG_AES is not set
+CONFIG_AES=y
 # CONFIG_ECDSA is not set
-# CONFIG_RSA_VERIFY is not set
-# CONFIG_RSA_VERIFY_WITH_PKEY is not set
-# CONFIG_RSA_SOFTWARE_EXP is not set
-# CONFIG_ASYMMETRIC_KEY_TYPE is not set
-# CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE is not set
-# CONFIG_RSA_PUBLIC_KEY_PARSER is not set
+CONFIG_RSA_VERIFY=y
+CONFIG_RSA_VERIFY_WITH_PKEY=y
+CONFIG_RSA_SOFTWARE_EXP=y
+CONFIG_ASYMMETRIC_KEY_TYPE=y
+CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE=y
+CONFIG_RSA_PUBLIC_KEY_PARSER=y
 
 # Image support
 #
-# CONFIG_IMAGE_PRE_LOAD is not set
-# CONFIG_IMAGE_PRE_LOAD_SIG is not set
+CONFIG_IMAGE_PRE_LOAD=y
+CONFIG_IMAGE_PRE_LOAD_SIG=y
 
 # CONFIG_DM_RTC is not set
 # CONFIG_DM_SCSI is not set
@@ -469,16 +469,16 @@ CONFIG_USB_XHCI_MXL=y
 CONFIG_USB_STORAGE=y
 CONFIG_RECOVER_BOOT_IMG="mmc dev 0 2 && mmc read ${loadaddr} 0 0x800 && mmc dev 0 1 && mmc write ${loadaddr} 0 0x800; mmc dev 0 0 && mmc read ${loadaddr} ${tep-inactive_block_start} ${tep-inactive_block_size} && mmc write ${loadaddr} ${tep-active_block_start} ${tep-active_block_size} && mmc read ${loadaddr} ${u-boot-inactive_block_start} ${u-boot-inactive_block_size} && mmc write ${loadaddr} ${u-boot-active_block_start} ${u-boot-active_block_size} && setenv early_boot 'valid' && saveenv; if test $? -eq 0; then echo \"Early boot Recovery success!\"; else echo \"Failed to recover early boot\"; fi;"
 CONFIG_RECOVER_BOOT_ALL_IMG="if test ${udt_status} -eq 10;then reset;else if test ${early_boot} != \"valid\";then run recover_early_boot;fi;if test ${late_boot} != \"valid\";then run switch_partition;setenv late_boot 'valid';fi;setenv udt_status 10;saveenv;reset;fi;"
-CONFIG_BOOTCOMMAND="run booted_active_image; run flashargs; run addmisc; run flash_flash;"
-# CONFIG_CMD_BOOTPRPL is not set
-# CONFIG_PRPL_BOOT_USE_EXT4LOAD is not set
+CONFIG_BOOTCOMMAND="run addmisc; if test \"${wantype}\" = \"pon\"; then bootprpl kernel-pon-config; else bootprpl; fi;reset"
+CONFIG_CMD_BOOTPRPL=y
+CONFIG_PRPL_BOOT_USE_EXT4LOAD=y
 CONFIG_FLASH_FLASH="run load_late_boot_img; if test $? -eq 1; then echo \"ERROR: Failed to load kernel from ${boot_part} bank\"; echo \"Triggering software reset; SPL will re-evaluate bootcount/bank\"; reset; fi; run formdtbparam && bootm ${kernel_loadaddr} - ${dtbparams}; reset"
 CONFIG_SWITCH_PRIMARY="setenv kernel_bank kernel-active; setenv rootfs_bank kernel-active; setenv boot_part 'active'; echo \"Switched to bank ${boot_part}\";"
 CONFIG_SWITCH_SECONDARY="setenv kernel_bank kernel-inactive; setenv rootfs_bank kernel-inactive; setenv boot_part 'inactive'; echo \"Switched to bank ${boot_part}\";"
 CONFIG_SWITCH_PARTITION="if test ${boot_part} = \"active\"; then run switch_to_secondary; else run switch_to_primary; fi;"
 CONFIG_PRPL_BOOT_SEQUENCE=y
-# CONFIG_PRPL_BOOT is not set
-# CONFIG_PRPL_MFG is not set
+CONFIG_PRPL_BOOT=y
+CONFIG_PRPL_MFG=y
 CONFIG_PERM_FAILOVER=y
 # CONFIG_EOW_OVERWRITE is not set
-# CONFIG_USE_BOOTCOMMAND is not set
+CONFIG_USE_BOOTCOMMAND=y
