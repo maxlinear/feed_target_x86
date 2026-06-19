@@ -88,6 +88,54 @@ software =
 					},
 				);
 			};
+			flash-only =
+			{
+				images =
+				(
+					{
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0boot0";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
+						name = "u-boot-inactive";
+						filename = "u-boot.itb";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0";
+						volume = "u-boot-inactive";
+						noinuse = "true";
+						installed-directly = True;
+					},
+					{
+						name = "tep-inactive";
+						filename = "tep_fw.itb";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0";
+						volume = "tep-inactive";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
+						name = "kernel-inactive";
+						filename = "ext4.img";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0";
+						volume = "kernel-inactive";
+						noinuse = "true";
+						installed-directly = True;
+					},
+				);
+				scripts =
+				(
+					{
+						filename = "prpl-enable-failover.lua";
+						type = "lua";
+					},
+				);
+			};
 		};
 		inactive =
 		{
@@ -131,11 +179,60 @@ software =
 						installed-directly = false;
 					},
 				);
-				scripts = (
+				scripts =
+				(
 					{
 						filename = "prpl-backup.lua";
 						type = "lua";
 					},
+					{
+						filename = "prpl-enable-failover.lua";
+						type = "lua";
+					},
+				);
+			};
+			flash-only =
+			{
+				images =
+				(
+					{
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0boot0";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
+						name = "u-boot-active";
+						filename = "u-boot.itb";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0";
+						volume = "u-boot-active";
+						noinuse = "true";
+						installed-directly = True;
+					},
+					{
+						name = "tep-active";
+						filename = "tep_fw.itb";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0";
+						volume = "tep-active";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
+						name = "kernel-active";
+						filename = "ext4.img";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0";
+						volume = "kernel-active";
+						noinuse = "true";
+						installed-directly = True;
+					},
+				);
+				scripts =
+				(
 					{
 						filename = "prpl-enable-failover.lua";
 						type = "lua";
