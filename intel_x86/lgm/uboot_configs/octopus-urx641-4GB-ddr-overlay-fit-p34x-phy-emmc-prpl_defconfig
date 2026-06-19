@@ -456,17 +456,17 @@ CONFIG_LGM_SSO_RED_LED_PIN_NO=24
 CONFIG_DM_THERMAL=y
 CONFIG_LGM_THERMAL=y
 CONFIG_FDT_OVERLAY_SUPPORT=y
-CONFIG_CMD_USB=y
+# CONFIG_CMD_USB is not set
 CONFIG_DOS_PARTITION=y
-CONFIG_CMD_DM=y
-CONFIG_USB=y
+# CONFIG_CMD_DM is not set
+# CONFIG_USB is not set
 # CONFIG_SPL_DM_USB is not set
-CONFIG_DM_USB=y
-CONFIG_USB_HOST=y
-CONFIG_USB_XHCI_HCD=y
+# CONFIG_DM_USB is not set
+# CONFIG_USB_HOST is not set
+# CONFIG_USB_XHCI_HCD is not set
 # CONFIG_USB_XHCI_PCI is not set
-CONFIG_USB_XHCI_MXL=y
-CONFIG_USB_STORAGE=y
+# CONFIG_USB_XHCI_MXL is not set
+# CONFIG_USB_STORAGE is not set
 CONFIG_RECOVER_BOOT_IMG="mmc dev 0 2 && mmc read ${loadaddr} 0 0x800 && mmc dev 0 1 && mmc write ${loadaddr} 0 0x800; mmc dev 0 0 && mmc read ${loadaddr} ${tep-inactive_block_start} ${tep-inactive_block_size} && mmc write ${loadaddr} ${tep-active_block_start} ${tep-active_block_size} && mmc read ${loadaddr} ${u-boot-inactive_block_start} ${u-boot-inactive_block_size} && mmc write ${loadaddr} ${u-boot-active_block_start} ${u-boot-active_block_size} && setenv early_boot 'valid' && saveenv; if test $? -eq 0; then echo \"Early boot Recovery success!\"; else echo \"Failed to recover early boot\"; fi;"
 CONFIG_RECOVER_BOOT_ALL_IMG="if test ${udt_status} -eq 10;then reset;else if test ${early_boot} != \"valid\";then run recover_early_boot;fi;if test ${late_boot} != \"valid\";then run switch_partition;setenv late_boot 'valid';fi;setenv udt_status 10;saveenv;reset;fi;"
 CONFIG_BOOTCOMMAND="run addmisc; if test \"${wantype}\" = \"pon\"; then bootprpl kernel-pon-config; else bootprpl; fi;reset"

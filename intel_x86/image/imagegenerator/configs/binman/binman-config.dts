@@ -139,6 +139,7 @@
 			};
 			rootfs: fit {
 				description = "Fit image with MXL rootfs filesystem";
+				version = PRPLOS_VERSION;
 				label = "rootfs";
 				fit,external-offset = <0x1000>;
 				images {

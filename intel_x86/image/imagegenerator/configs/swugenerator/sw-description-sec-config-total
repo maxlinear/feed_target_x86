@@ -18,6 +18,14 @@ software =
 				images =
 				(
 					{
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0boot0";
+						noinuse = "true";
+						installed-directly = false;
+					},
+					{
 						name = "u-boot-inactive";
 						filename = "u-boot.itb";
 						type = "mxl_imghdlr";
@@ -87,6 +95,14 @@ software =
 			{
 				images =
 				(
+					{
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_imghdlr";
+						device = "/dev/mmcblk0boot0";
+						noinuse = "true";
+						installed-directly = false;
+					},
 					{
 						name = "u-boot-active";
 						filename = "u-boot.itb";

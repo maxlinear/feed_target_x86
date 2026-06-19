@@ -18,31 +18,13 @@ software =
 				images =
 				(
 					{
-						name = "u-boot-inactive";
-						filename = "u-boot.itb";
-						type = "mxl_imghdlr";
-						device = "/dev/mmcblk0";
-						volume = "u-boot-inactive";
-						noinuse = "true";
-						installed-directly = false;
-					},
-					{
-						name = "tep-inactive";
-						filename = "tep_fw.itb";
-						type = "mxl_imghdlr";
-						device = "/dev/mmcblk0";
-						volume = "tep-inactive";
-						noinuse = "true";
-						installed-directly = false;
-					},
-					{
 						name = "kernel-inactive";
 						filename = "ext4.img";
-						type = "mxl_imghdlr";
+						type = "gptpart";
 						device = "/dev/mmcblk0";
 						volume = "kernel-inactive";
 						noinuse = "true";
-						installed-directly = false;
+						installed-directly = True;
 					},
 				);
 				scripts =
@@ -53,16 +35,6 @@ software =
 						properties =
 						{
 							swap-0 =
-							[
-								"u-boot-active",
-								"u-boot-inactive"
-							];
-							swap-1 =
-							[
-								"tep-active",
-								"tep-inactive"
-							];
-							swap-2 =
 							[
 								"kernel-active",
 								"kernel-inactive"
@@ -88,31 +60,13 @@ software =
 				images =
 				(
 					{
-						name = "u-boot-active";
-						filename = "u-boot.itb";
-						type = "mxl_imghdlr";
-						device = "/dev/mmcblk0";
-						volume = "u-boot-active";
-						noinuse = "true";
-						installed-directly = false;
-					},
-					{
-						name = "tep-active";
-						filename = "tep_fw.itb";
-						type = "mxl_imghdlr";
-						device = "/dev/mmcblk0";
-						volume = "tep-active";
-						noinuse = "true";
-						installed-directly = false;
-					},
-					{
 						name = "kernel-active";
 						filename = "ext4.img";
-						type = "mxl_imghdlr";
+						type = "gptpart";
 						device = "/dev/mmcblk0";
 						volume = "kernel-active";
 						noinuse = "true";
-						installed-directly = false;
+						installed-directly = True;
 					},
 				);
 				scripts = (

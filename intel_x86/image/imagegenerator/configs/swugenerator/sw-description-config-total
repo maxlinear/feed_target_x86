@@ -18,31 +18,30 @@ software =
 				images =
 				(
 					{
-						name = "u-boot-inactive";
-						filename = "u-boot.itb";
-						type = "mxl_imghdlr";
-						device = "/dev/mmcblk0";
-						volume = "u-boot-inactive";
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_rbehdlr";
+						device = "/dev/mmcblk0boot0";
 						noinuse = "true";
 						installed-directly = false;
 					},
 					{
-						name = "tep-inactive";
-						filename = "tep_fw.itb";
-						type = "mxl_imghdlr";
+						name = "u-boot-inactive";
+						filename = "u-boot.itb";
+						type = "gptpart";
 						device = "/dev/mmcblk0";
-						volume = "tep-inactive";
+						volume = "u-boot-inactive";
 						noinuse = "true";
-						installed-directly = false;
+						installed-directly = True;
 					},
 					{
 						name = "kernel-inactive";
 						filename = "ext4.img";
-						type = "mxl_imghdlr";
+						type = "gptpart";
 						device = "/dev/mmcblk0";
 						volume = "kernel-inactive";
 						noinuse = "true";
-						installed-directly = false;
+						installed-directly = True;
 					},
 				);
 				scripts =
@@ -54,18 +53,13 @@ software =
 						{
 							swap-0 =
 							[
-								"u-boot-active",
-								"u-boot-inactive"
+								"kernel-active",
+								"kernel-inactive"
 							];
 							swap-1 =
 							[
-								"tep-active",
-								"tep-inactive"
-							];
-							swap-2 =
-							[
-								"kernel-active",
-								"kernel-inactive"
+								"u-boot-active",
+								"u-boot-inactive"
 							];
 							noinuse = "true";
 						};
@@ -88,31 +82,30 @@ software =
 				images =
 				(
 					{
-						name = "u-boot-active";
-						filename = "u-boot.itb";
-						type = "mxl_imghdlr";
-						device = "/dev/mmcblk0";
-						volume = "u-boot-active";
+						name = "rbe";
+						filename = "u-boot-spl-emmc.bin";
+						type = "mxl_rbehdlr";
+						device = "/dev/mmcblk0boot0";
 						noinuse = "true";
 						installed-directly = false;
 					},
 					{
-						name = "tep-active";
-						filename = "tep_fw.itb";
-						type = "mxl_imghdlr";
+						name = "u-boot-active";
+						filename = "u-boot.itb";
+						type = "gptpart";
 						device = "/dev/mmcblk0";
-						volume = "tep-active";
+						volume = "u-boot-active";
 						noinuse = "true";
-						installed-directly = false;
+						installed-directly = True;
 					},
 					{
 						name = "kernel-active";
 						filename = "ext4.img";
-						type = "mxl_imghdlr";
+						type = "gptpart";
 						device = "/dev/mmcblk0";
 						volume = "kernel-active";
 						noinuse = "true";
-						installed-directly = false;
+						installed-directly = True;
 					},
 				);
 				scripts = (

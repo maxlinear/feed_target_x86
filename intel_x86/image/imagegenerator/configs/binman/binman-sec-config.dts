@@ -136,6 +136,7 @@
 			filename = "rootfs.itb";
 			rootfs: fit {
 				description = "Fit image with MXL rootfs filesystem";
+				version = PRPLOS_VERSION;
 				label = "rootfs";
 				images {
 					rootfs {
