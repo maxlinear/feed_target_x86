@@ -238,6 +238,7 @@ CONFIG_ENV_SUPPORT=y
 CONFIG_SAVEENV=y
 CONFIG_ENV_IS_IN_MMC=y
 CONFIG_ENV_WRITEABLE_LIST=y
+CONFIG_PRPL_ENV_WHITELIST="failover:sw,wantype:sw,serverip:sw,ipaddr:sw,netmask:sw,gatewayip:sw,tftppath:sw,kernel_loglvl:sw,rbe_size:sw,filesystem_size:sw,rootfs_a_filesize:sw,rootfs_b_filesize:sw,rootfs_loadaddr:sw,upgrade_image:sw,udt_status:sw,late_boot:sw,early_boot:sw,boot_count:sw,active_bank:sw,boot_partition:sw,max_boot_count:sw,recovery_image:sw,kernel_a_filesize:sw,kernel_b_filesize:sw,uboot_a_filesize:sw,uboot_b_filesize:sw,rbe_a_filesize:sw,rbe_b_filesize:sw,tep_firmware_a_filesize:sw,tep_firmware_b_filesize:sw"
 CONFIG_ENV_ACCESS_IGNORE_FORCE=y
 CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
 CONFIG_ENV_OFFSET=0x480000
