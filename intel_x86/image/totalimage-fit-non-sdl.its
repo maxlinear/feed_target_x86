@@ -24,7 +24,7 @@
 		};
 		kernel-dtb {
 			description = "MXL URX Linux kernel and DTB FIT Image";
-			data = /incbin/("prplos-intel_x86-lgm-PRPL_MB_URX-641_wav700_kernel_dtb.fit");
+			data = /incbin/("prplos-intel_x86-lgm-PRPL_MB_URX-641_wav700-kernel.itb");
 			type = "firmware";
 			arch = "x86_64";
 			os = "linux";
@@ -32,7 +32,7 @@
 		};
 		filesystem {
 			description = "MXL URX Rootfs FIT image";
-			data = /incbin/("prplos-intel_x86-lgm-PRPL_MB_URX_rootfs.fit");
+			data = /incbin/("prplos-intel_x86-lgm-PRPL_MB_URX-rootfs.itb");
 			type = "firmware";
 			arch = "x86_64";
 			compression = "none";

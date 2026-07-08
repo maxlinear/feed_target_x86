@@ -95,22 +95,44 @@ define Build/kernel-metadata
 	mv $(LINUX_KERNEL).metadata.pad $(LINUX_KERNEL).metadata
 endef
 endif
+
 ifeq ($(CONFIG_INTEL_X86_SECBOOT),y)
 ifeq ($(CONFIG_INTEL_X86_EXTERNAL_IMAGE_SIGNING),y)
 define Build/sign-image
 endef
 define Build/sign-rootfs
-	mkdir -p $(BIN_DIR)/single-images/non_signed_image
-	cp -vf $@ $(BIN_DIR)/single-images/non_signed_image
+	mkdir -p $(BIN_DIR)/non_signed_image
+	cp -vf $@ $(BIN_DIR)/non_signed_image
 endef
-define Build/fullimage
+define Build/imagegenerator-init
+	echo "" > /dev/null
+endef
+define Build/update-binman
+	mkdir -p $(BIN_DIR)/non_signed_image
+	cp -vf $(IMAGE_KERNEL) $(BIN_DIR)/non_signed_image/
+
 	# wrap rootfs to uImage
 	mkimage -A $(LINUX_KARCH) -O linux -C lzma -T filesystem -a 0x00  \
 		-e 0x00 -n 'LEDE RootFS' \
 		-d $(2) $@.rootfs.wo_sign
 	mkdir -p $(BIN_DIR)/non_signed_image
-	mv $@.rootfs.wo_sign $(2).pad
-	cp -vf $(2).pad $(BIN_DIR)/non_signed_image
+	mv $@.rootfs.wo_sign $(2)	
+	cp -vf $(2) $(BIN_DIR)/non_signed_image
+endef
+define Build/update-sw-description
+	echo "" > /dev/null
+endef
+define Build/binman
+	echo "" > /dev/null
+endef
+define Build/swugenerator
+	echo "" > /dev/null
+endef
+define Build/swugenerator-mxl
+	echo "" > /dev/null
+endef
+define Build/build-fullimage
+	echo "" > /dev/null
 endef
 else
 define Build/sign-image
@@ -146,213 +168,13 @@ define Build/sign-rootfs
 		-outfile $@.tmp
 	mv $@.tmp $@
 endef
-define Build/fullimage
-	echo "Creating $@ with dtb file $(3) "
-	# wrap rootfs to uImage
-	dd if=$(2) of=$@.rootfs bs=$(1) conv=sync;
-	mkimage -A $(LINUX_KARCH) -O linux -C lzma -T filesystem -a 0x00  \
-		-e 0x00 -n 'LEDE RootFS' \
-		-d $@.rootfs $@.rootfs.pad
-
-	echo "Sigining and generating the respective dtb.signed files"
-	$(CONFIG_INTEL_X86_SIGNTOOL) sign -type BLw -prikey $(CONFIG_INTEL_X86_PRIVATE_KEY) -wrapkey $(CONFIG_INTEL_X86_PROD_UNIQUE_KEY) -encattr -kdk -sm -secure \
-	-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x0$(4) -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
-	-cert $(CONFIG_INTEL_X86_CERTIFICATION) -infile $(3) -outfile $@.dtb.signed
-
-	@echo "Waiting for the file to get signed.."
-	@echo "Entering for retry mechanism if required dtb is not found...!"
-	@tries=0; \
-	while [ $$tries -lt 10 ]; do \
-		sleep 2; \
-		ls -ltr $@.dtb.signed; \
-		if [ -f "$@.dtb.signed" ]; then \
-			echo "File found...!"; \
-			break; \
-		fi; \
-		echo "File not found..."; \
-		$(CONFIG_INTEL_X86_SIGNTOOL) sign -type BLw -prikey $(CONFIG_INTEL_X86_PRIVATE_KEY) -wrapkey $(CONFIG_INTEL_X86_PROD_UNIQUE_KEY) -encattr -kdk -sm -secure \
-		-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x0$(4) -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
-		-cert $(CONFIG_INTEL_X86_CERTIFICATION) -infile $(3) -outfile $@.dtb.signed; \
-		tries=`expr $$tries + 1`; \
-		echo "trail value is $$tries"; \
-    done; \
-	if [ ! -f "$@.dtb.signed" ]; then \
-		echo "File not found after 10 tries. please retry the build..!"; \
-	fi; \
-
-	# wrap device tree blob to u-boot fit image
-#	dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync;
-
-	[ -f "$@.dtb.signed" ] && dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync || sync && dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync || echo "Failed!" > /dev/null
-
-	mkimage -A $(LINUX_KARCH) -O linux -C none -T flat_dt \
-		-f auto -n 'Flattened Device Tree' \
-		-d $@.dtb $@.dtb.pad
-
-	echo "Concatenating $(IMAGE_KERNEL) $@.rootfs.pad $@.dtb.pad into $@.tmp"
-	cat $(IMAGE_KERNEL) $@.rootfs.pad $@.dtb.pad > $@.tmp
-
-	mkimage -A $(LINUX_KARCH) -O linux -T multi -a 0x00 -C none \
-		-e 0x00 \
-		-n '$(if $(UIMAGE_NAME),$(UIMAGE_NAME),OpenWrt fullimage)' \
-		-d $@.tmp $@
-
-	rm -rf $@.rootfs
-	rm -rf $@.rootfs.pad
-	rm -rf $@.dtb
-	rm -rf $@.dtb.pad
-endef
-endif
-else
-define Build/sign-image
-endef
-
-define Build/sign-rootfs
-	echo "" > /dev/null
-endef
-
-define Build/fullimage
-	dd if=$(2) of=$@.rootfs bs=$(1) conv=sync;
-	mkimage -A $(LINUX_KARCH) -O linux -C lzma -T filesystem -a 0x00  \
-		-e 0x00 -n 'LEDE RootFS' \
-		-d $@.rootfs $@.rootfs.pad
-
-	# wrap device tree blob to u-boot fit image
-	dd if=$(3) of=$@.dtb bs=$(1) conv=sync;
-	mkimage -A $(LINUX_KARCH) -O linux -C none -T flat_dt \
-		-f auto -n 'Flattened Device Tree' \
-		-d $@.dtb $@.dtb.pad
-
-	cat $(IMAGE_KERNEL) $@.rootfs.pad $@.dtb.pad > $@.tmp
-
-	mkimage -A $(LINUX_KARCH) -O linux -T multi -a 0x00 -C none \
-		-e 0x00 \
-		-n '$(if $(UIMAGE_NAME),$(UIMAGE_NAME),OpenWrt fullimage)' \
-		-d $@.tmp $@
-
-	rm -rf $@.rootfs
-	rm -rf $@.rootfs.pad
-	rm -rf $@.dtb
-	rm -rf $@.dtb.pad
-endef
-endif
-
-ifeq ($(CONFIG_INTEL_X86_SECBOOT),y)
-ifeq ($(CONFIG_INTEL_X86_EXTERNAL_IMAGE_SIGNING),y)
-# generates kernel+dtb in fit format.
-define Build/fit-kernel-dtb
-	mkdir -p $(BIN_DIR)/single-images/non_signed_image
-	cp -vf $(IMAGE_KERNEL) $(BIN_DIR)/single-images/non_signed_image/
-	cp -vf $(2) $(BIN_DIR)/single-images/non_signed_image
-endef
-define Build/fit-fullimage
-	echo "" > /dev/null
-endef
-else
-# generates kernel+dtb in fit format.
-define Build/fit-kernel-dtb
-	#kernel image
-	dd if=$(IMAGE_KERNEL) of=$(IMAGE_KERNEL).fitimage bs=64 skip=1
-
-	#dtb image signing and padding
-	$(CONFIG_INTEL_X86_SIGNTOOL) sign -type BLw -prikey $(CONFIG_INTEL_X86_PRIVATE_KEY) -wrapkey $(CONFIG_INTEL_X86_PROD_UNIQUE_KEY) -encattr -kdk -sm -secure \
-		-pubkeytype otp -algo aes256 -attribute 0x80000000=0x08000000 -attribute 0x80000002=0x0$(3) -attribute 0x80000006=0x0 -attribute 0x80000009=0x00001001 -attribute rollback=$(CONFIG_INTEL_X86_DTB_ROLLBACKID)\
-		-cert $(CONFIG_INTEL_X86_CERTIFICATION) -infile $(2) -outfile $@.dtb.signed
-	dd if=$@.dtb.signed of=$@.dtb bs=$(1) conv=sync;
-
-	#its file update and fit image creation
-	$(eval DTB_BASE_FILE:=$(basename $(notdir $(2))))
-	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
-	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
-	sed -e 's@KERNEL@$(IMAGE_KERNEL).fitimage@g' \
-		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
-		-e 's@DTB@$@.dtb@g' kernel-dtb-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its
-	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb.fit
-endef
-# generates fullimage in fit format.
-define Build/fit-fullimage
-	$(eval DTB_BASE_FILE:=$(basename $(notdir $@)))
-	sed -e "s@KERNEL-DTB@$(1)@g" \
-		-e "s@ROOTFS@$(2)@g" fullimage-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE).its
-	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE).its $@
-endef
-endif
-else
-# generates kernel+dtb in fit format.
-define Build/fit-kernel-dtb
-	gzip -f -9n -c $(KDIR)/vmlinux > $(KDIR)/vmlinux.gz
-	$(eval DTB_BASE_FILE:=$(basename $(notdir $(2))))
-	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
-	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
-	sed -e 's@KERNEL@$(KDIR)/vmlinux.gz@g' \
-		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
-		-e 's@DTB@$(2)@g' kernel-dtb-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its
-	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb_fit.its $(KDIR)/tmp/$(DTB_BASE_FILE)_kernel_dtb.fit
-endef
-# generates fullimage in fit format.
-define Build/fit-fullimage
-	$(eval DTB_BASE_FILE:=$(basename $(notdir $@)))
-	sed -e "s@KERNEL-DTB@$(1)@g" \
-		-e "s@ROOTFS@$(2)@g" fullimage-fit.its > $(KDIR)/tmp/$(DTB_BASE_FILE).its
-	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE).its $@
-endef
-endif
-# generates rootfs in fit format.
-define Build/fit-rootfs
-	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
-	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
-	dd if=$@ of=$@.tmp bs=16 conv=sync;
-	mv $@.tmp $@
-	sed -e 's@ROOTFS@$@@g' \
-		-e 's@version = .*;@version = "$(VERSION)-$(TIMESTAMP)";@g' \
-	rootfs-fit.its > $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its
-	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.its $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)_rootfs.fit
-endef
-
-# generates dtb file with basedtb (eth dtb) and overlay PON dtbo.
-define Build/singledtb
-	mkdir -p $(BIN_DIR)/single-images
-	$(eval DTB_BASE_FILE:=$(basename $(notdir $@)))
-	sed -e 's@DTBO_FILE@$(1)@g' -e 's@DTB_FILE@$(2)@g' overlay_pon.its > $(KDIR)/tmp/$(DTB_BASE_FILE).its
-	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/tmp/$(DTB_BASE_FILE).its $(KDIR)/tmp/$(DTB_BASE_FILE).itb
-	mv -v $(KDIR)/tmp/$(DTB_BASE_FILE).itb $(KDIR)/tmp/$(DTB_BASE_FILE).dtb
-	cp -vf $(KDIR)/tmp/$(DTB_BASE_FILE).dtb $(BIN_DIR)/single-images/
-endef
-
-ifeq ($(CONFIG_INTEL_X86_SECBOOT),y)
-ifeq ($(CONFIG_INTEL_X86_EXTERNAL_IMAGE_SIGNING),y)
-define Build/sign-rootfs
-	mkdir -p $(BIN_DIR)/non_signed_image
-	cp -vf $@ $(BIN_DIR)/non_signed_image
-endef
-define Build/imagegenerator-init
-	echo "" > /dev/null
-endef
-define Build/update-binman
-	mkdir -p $(BIN_DIR)/non_signed_image
-	cp -vf $(IMAGE_KERNEL) $(BIN_DIR)/non_signed_image/
-endef
-define Build/update-sw-description
-	echo "" > /dev/null
-endef
-define Build/binman
-	echo "" > /dev/null
-endef
-define Build/swugenerator
-	echo "" > /dev/null
-endef
-define Build/swugenerator-mxl
-	echo "" > /dev/null
-endef
-define Build/build-fullimage
-	echo "" > /dev/null
-endef
-else
 define Build/update-binman
 	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
+
+	#rootfs image
+	dd if=$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs of=$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs.tmp bs=16 conv=sync;
+
 	#kernel image
 	dd if=$(IMAGE_KERNEL) of=$(IMAGE_KERNEL).fitimage bs=64 skip=1
 
@@ -380,7 +202,7 @@ define Build/update-binman
 		sed -e 's@KERNEL@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-initramfs-kernel.bin.fitimage@g' \
 			-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
 			-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
-			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
+			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs.tmp@g' \
 			-e 's@version = ".*";@version = "$(VERSION)-$(TIMESTAMP)";@g' \
 			-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 			imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts; \
@@ -389,7 +211,7 @@ define Build/update-binman
 		sed -e 's@KERNEL@$(IMAGE_KERNEL).fitimage@g' \
 			-e 's@DTB@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)@g' \
 			-e 's@OVERLAY@$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo@g' \
-			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs@g' \
+			-e 's@ROOTFS@$(IMG_GEN_DIR)/build/$(DEVICE_IMG_PREFIX)-squashfs-fs.rootfs.tmp@g' \
 			-e 's@version = ".*";@version = "$(VERSION)-$(TIMESTAMP)";@g' \
 			-e 's@version = PRPLOS_VERSION;@version = "$(strip $(shell $(SCRIPT_DIR)/prplos_version.sh))";@g' \
 			imagegenerator/configs/binman/binman-sec-config.dts > $(IMG_GEN_DIR)/build/binman-config.dts; \
@@ -431,11 +253,18 @@ define Build/build-fullimage
 endef
 endif
 else
+define Build/sign-image
+endef
+
+define Build/sign-rootfs
+	echo "" > /dev/null
+endef
+
 define Build/update-binman
 	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 
-	gzip -f -9n -c $(KDIR)/vmlinux > $(IMG_GEN_DIR)/build/vmlinux.gz
+	gzip -f -9n -c $(KDIR)/vmlinux > $(IMG_GEN_DIR)/build//vmlinux.gz
 
 	#strip the header from rbe.
 	dd if=$(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin of=$(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin.stripped bs=64 skip=1
@@ -565,106 +394,6 @@ define Device/Build/image-non-rootfs
 endef
 endif
 
-define Device/Build/singledtb
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1))): $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo-image-non-rootfs $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs
-	@rm -rf $$@
-	[ -f $$(word 1,$$^) ]
-	$$(call Build/singledtb,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-overlay.dtbo-image-non-rootfs,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs)
-
-endef
-
-define Device/Build/fullimage
-  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-  $(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage,$(1)))
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs
-	@rm -rf $$@
-	[ -f $$(word 1,$$^) ]
-	$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs,8000000)
-
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-	mkdir -p $(BIN_DIR)/dual-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)-$(1)
-
-  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-
-endef
-
-define Device/Build/singlefullimage
-  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-  $(eval $(call Device/Export,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage,$(1)))
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $$(KDIR_KERNEL_IMAGE) $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1)))
-	@rm -rf $$@
-	[ -f $$(word 1,$$^) ]
-	$$(call Build/fullimage,$(word 2,$(IMAGE/$(1))),$(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1))),8100000)
-
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(1)-fullimage $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(1)
-
-  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(1)-fullimage
-
-endef
-define Device/Build/fitimage
-  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
-  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit: $$(KDIR_KERNEL_IMAGE) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs
-	$$(call Build/fit-kernel-dtb,$(word 2,$(IMAGE/$(1))),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 4,$(IMAGE/$(1)))-image-non-rootfs,8000000)
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
-	$$(call Build/fit-fullimage,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit)
-
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
-	mkdir -p $(BIN_DIR)/dual-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)_rootfs.fit
-
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
-	mkdir -p $(BIN_DIR)/dual-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit $(BIN_DIR)/dual-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
-
-  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_kernel_dtb.fit
-  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 4,$(IMAGE/$(1))))_fullimage.fit
-
-endef
-
-define Device/Build/singlefitimage
-  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
-  $$(_TARGET): $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit: $$(KDIR_KERNEL_IMAGE) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1)))
-	$$(call Build/fit-kernel-dtb,$(word 2,$(IMAGE/$(1))),$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(word 5,$(IMAGE/$(1))),8100000)
-
-  $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-squashfs-$$(ROOTFS) $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit
-	$$(call Build/fit-fullimage,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit,$(KDIR)/tmp/$(DEVICE_IMG_PREFIX)_rootfs.fit)
-
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
-
-  .IGNORE: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
-
-  $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit: $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
-	mkdir -p $(BIN_DIR)/single-images
-	cp -vf $(KDIR)/tmp/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit $(BIN_DIR)/single-images/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
-
-  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_kernel_dtb.fit
-  .NOTPARALLEL: $(BIN_DIR)/$(DEVICE_IMG_PREFIX)-$(basename $(word 5,$(IMAGE/$(1))))_fullimage.fit
-
-endef
-
 # Default openwrt image script builds different images (kernel/dtb) per
 # rootfs. This is not ideal for our usecase, which should only need
 # different image for the rootfs itself (kernel/dtb should be common).
@@ -722,6 +451,7 @@ define Device/SWUPDATE_INIT
   BINMAN_INPUT_$(1) := $$(KDIR)/$(4)/u-boot-*/u-boot.lzimg \
 		$$(KDIR)/$(4)/u-boot-*/spl/u-boot-spl-emmc.bin \
 		$$(KDIR)/tep_fw-*/tep_fw.bin \
+		$$(KDIR)/vmlinux.gz \
 		$$(KDIR)/tmp/$$(DEVICE_IMG_PREFIX)-$(3) \
 		$$(KDIR)/tmp/$$(DEVICE_IMG_PREFIX)-overlay.dtbo \
 		$$(BIN_DIR)/$(IMG_PREFIX)-secure-initramfs.cpio.gz \
@@ -1128,17 +858,35 @@ define Device/PRPL_MB_URX
   DEVICE_TITLE := LGM CBSP B-Step Model for prplos
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
+  IMAGE/641_wav700_eth_pm.dtb := dtb octopus_641_wav700_eth_pm
   IMAGE/851_wav700_eth.dtb := dtb octopus_851_wav700_eth
+  IMAGE/851_wav700_eth_pm.dtb := dtb octopus_851_wav700_eth_pm
   $(if $(CONFIG_INTEL_X86_SECBOOT),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-sec-overlay-fit-p34x-phy-emmc-prpl),\
   $(call Device/SWUPDATE_INIT,641_wav700,urx641,641_wav700_eth.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl))
   $(if $(CONFIG_INTEL_X86_SECBOOT),\
+  $(call Device/SWUPDATE_INIT,641_pm_wav700,urx641,641_wav700_eth_pm.dtb,octopus-urx641-sec-overlay-fit-p34x-phy-emmc-prpl),\
+  $(call Device/SWUPDATE_INIT,641_pm_wav700,urx641,641_wav700_eth_pm.dtb,octopus-urx641-overlay-fit-p34x-phy-emmc-prpl))
+  $(if $(CONFIG_INTEL_X86_SECBOOT),,\
+  $(call Device/SWUPDATE_INIT,641_wav700_10g,urx641,641_wav700_eth.dtb,octopus-urx641-overlay-fit-10g-lan-emmc-prpl))
+  $(if $(CONFIG_INTEL_X86_SECBOOT),,\
+  $(call Device/SWUPDATE_INIT,641_pm_wav700_10g,urx641,641_wav700_eth_pm.dtb,octopus-urx641-overlay-fit-10g-lan-emmc-prpl))
+  $(if $(CONFIG_INTEL_X86_SECBOOT),\
   $(call Device/SWUPDATE_INIT,851_wav700,urx851,851_wav700_eth.dtb,octopus-urx851-sec-overlay-fit-p34x-phy-emmc-prpl),\
   $(call Device/SWUPDATE_INIT,851_wav700,urx851,851_wav700_eth.dtb,octopus-urx851-overlay-fit-p34x-phy-emmc-prpl))
+  $(if $(CONFIG_INTEL_X86_SECBOOT),\
+  $(call Device/SWUPDATE_INIT,851_pm_wav700,urx851,851_wav700_eth_pm.dtb,octopus-urx851-sec-overlay-fit-p34x-phy-emmc-prpl),\
+  $(call Device/SWUPDATE_INIT,851_pm_wav700,urx851,851_wav700_eth_pm.dtb,octopus-urx851-overlay-fit-p34x-phy-emmc-prpl))
+  $(if $(CONFIG_INTEL_X86_SECBOOT),,\
+  $(call Device/SWUPDATE_INIT,851_wav700_10g,urx851,851_wav700_eth.dtb,octopus-urx851-overlay-fit-10g-lan-emmc-prpl))
+  $(if $(CONFIG_INTEL_X86_SECBOOT),,\
+  $(call Device/SWUPDATE_INIT,851_pm_wav700_10g,urx851,851_wav700_eth_pm.dtb,octopus-urx851-overlay-fit-10g-lan-emmc-prpl))
   IMAGES += kernel.bin \
 		overlay.dtbo \
 		641_wav700_eth.dtb \
-		851_wav700_eth.dtb
+		641_wav700_eth_pm.dtb \
+		851_wav700_eth.dtb \
+		851_wav700_eth_pm.dtb
   ROOTFS := fs.rootfs
   ROOTFS_PREPARE := add-servicelayer-schema
   DEVICE_PACKAGES := $(PM_PACKAGES)\
