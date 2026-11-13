@@ -70,8 +70,22 @@
 	vbus-supply = <&usb_vbus>;
 };
 
+/* Add overcurrent interrupt support for USB */
+/* Note: IO-APIC 46 is used for USB0 overcurrent detection (not available on octopus_641)
+ *       IO-APIC 47 is used for USB0 host controller interrupt (not available on octopus_641)
+ *       IO-APIC 48 is used for USB1 overcurrent detection
+ *       IO-APIC 49 is used for USB1 host controller interrupt
+ * Note: USB0 is not available on octopus_641 platform (deleted in octopus_641.dtsi)
+ * Note: Overcurrent interrupt must be configured in dwc3@e6e00000 node, not in usb1 parent node,
+ *       because DWC3 driver creates xHCI platform device from dwc3@e6e00000 resources
+ */
 &usb1 {
 	status = "okay";
+	dwc3@e6e00000 {
+		interrupt-names = "host", "overcurrent";
+		interrupt-parent = <&ioapic1>;
+		interrupts = <49 1>, <48 1>; /* host interrupt, overcurrent interrupt */
+	};
 };
 
 &i2c0 { /* used by PMIC */

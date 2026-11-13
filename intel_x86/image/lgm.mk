@@ -264,7 +264,8 @@ define Build/update-binman
 	$(eval TIMESTAMP:=$(shell cat $(STAGING_DIR_ROOT)/etc/timestamp))
 	$(eval VERSION:=$(shell cat $(STAGING_DIR_ROOT)/etc/version))
 
-	gzip -f -9n -c $(KDIR)/vmlinux > $(IMG_GEN_DIR)/build//vmlinux.gz
+	#kernel image
+	gzip -f -9n -c $(KDIR)/vmlinux > $(IMG_GEN_DIR)/build/vmlinux.gz
 
 	#strip the header from rbe.
 	dd if=$(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin of=$(IMG_GEN_DIR)/build/u-boot-spl-emmc.bin.stripped bs=64 skip=1
@@ -855,7 +856,7 @@ TARGET_DEVICES += PRPL_MB_URX_MINIFS
 
 define Device/PRPL_MB_URX
   $(Device/LGM_GENERIC)
-  DEVICE_TITLE := LGM CBSP B-Step Model for prplos
+  DEVICE_TITLE := LGM Model for prplos - Octopus-641/851
   IMAGE/overlay.dtbo := dtbo overlay_pon
   IMAGE/641_wav700_eth.dtb := dtb octopus_641_wav700_eth
   IMAGE/641_wav700_eth_pm.dtb := dtb octopus_641_wav700_eth_pm

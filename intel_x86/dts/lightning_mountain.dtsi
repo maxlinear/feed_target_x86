@@ -776,7 +776,7 @@
 			mxl,clk = <&clocksource 2 0 0 32 0>, /* Heartbeat timer 1 */
 				  <&clocksource 3 1 0 32 0>, /* SSO timer 2 */
 				  <&clocksource 0 2 1 32 0>; /* Prewarn timer 3 */
-			prewarn-num = <0>;
+			prewarn-num = <1>;
 			prewarn-timer = <2 1 3>;
 			mxl,wdt-rst-base = <&sysconf>;
 			clocks = <&cgu0 LGM_CLK_NOC4>, <&cgu0 LGM_GCLK_GPTC0>;
@@ -1081,6 +1081,7 @@
 			reg = <0xe7e00000 0x10000>;
 			interrupt-parent = <&ioapic1>;
 			interrupts = <46 1>;
+			clocks = <&cgu0 LGM_GCLK_USB1>;
 			power-domains = <&pd_usb1>;
 			resets = <&rcu0 0x70 22>, <&rcu0 0x70 26>,
 				 <&rcu0 0x70 24>, <&rcu0 0x70 28>;
@@ -1112,6 +1113,7 @@
 			reg = <0xe6f00000 0x10000>;
 			interrupt-parent = <&ioapic1>;
 			interrupts = <48 1>;
+			clocks = <&cgu0 LGM_GCLK_USB2>;
 			power-domains = <&pd_usb2>;
 			resets = <&rcu0 0x70 23>, <&rcu0 0x70 27>,
 				<&rcu0 0x70 25>, <&rcu0 0x70 29>;

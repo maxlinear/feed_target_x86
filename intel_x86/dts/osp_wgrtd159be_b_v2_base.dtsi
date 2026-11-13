@@ -137,3 +137,31 @@
 	uart-has-rtscts;
 	status = "okay";
 };
+
+&ssc2 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_spi2 &pinctrl_spi2_cs0>;
+	nhd_240320AF: nhd_240320AF@0 {
+		compatible = "nhd_240320AF", "panel-mipi-dbi-spi";
+		reg = <0>;
+		reset-gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>; // IO25
+		spi-max-frequency = <32000000>; // this maxs out at about 15fps.
+		write-only; // SPI-8 bit bus can't read 9 bit
+
+		width-mm = <49>;
+		height-mm = <36>;
+		panel-timing {
+			hactive = <320>;
+			vactive = <240>;
+			hback-porch = <0>;
+			vback-porch = <0>;
+
+			clock-frequency = <1152000>; // 15 fps, fps/320/240
+			hfront-porch = <0>;
+			hsync-len = <0>;
+			vfront-porch = <0>;
+			vsync-len = <0>;
+		};
+	};
+};
